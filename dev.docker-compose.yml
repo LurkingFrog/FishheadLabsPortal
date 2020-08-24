@@ -1,0 +1,45 @@
+version: "3.8"
+services:
+  headless:
+    image: zenika/alpine-chrome
+    depends_on:
+      - postgres
+    volumes:
+      - ~/Foundry/Protean/protean_examples/diesel_updates/pdfs:/pdfs
+
+  postgres:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: password
+    volumes:
+      - "pg_data:/var/lib/postgresql/data"
+
+  portal:
+    image: mhart/alpine-node:latest
+    ports:
+      - 9080:80
+    volumes:
+      - ".:/project"
+      - "~/.cargo:/usr/local/cargo"
+      - "/etc/passwd:/etc/passwd"
+
+  server:
+    user: $USER_ID
+    working_dir: /project/server
+    image: rust:latest
+    ports:
+      - 9081:80
+    volumes:
+      - ".:/project"
+      - "~/.cargo:/usr/local/cargo"
+      - "/etc/passwd:/etc/passwd"
+    environment:
+      DEBUG_COLORS: "true"
+      TERM: xterm-256color
+      COLORTERM: truecolor
+    tty: true
+    command: ["cargo", "run"]
+
+volumes:
+  pg_data:
