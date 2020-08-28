@@ -2,5 +2,6 @@
 members = [
   "cache",
   "client",
+  "postgres",
   "server",
 ]

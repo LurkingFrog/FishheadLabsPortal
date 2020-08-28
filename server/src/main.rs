@@ -7,50 +7,76 @@
 
 use std::env;
 
-use juniper::{EmptyMutation, EmptySubscription, RootNode};
+use cache::*;
 use warp::{http::Response, Filter};
 
-type Schema = RootNode<'static, Query, EmptyMutation<Database>, EmptySubscription<Database>>;
+// use juniper::{
+//   tests::{model::Database, schema::Query},
+//   EmptyMutation, RootNode,
+// };
+// use warp::{http::Response, Filter};
 
-fn schema() -> Schema {
-  Schema::new(
-    Query,
-    EmptyMutation::<Database>::new(),
-    EmptySubscription::<Database>::new(),
-  )
-}
+// type Schema = RootNode<'static, Query, EmptyMutation<Database>>;
+
+// fn schema() -> Schema {
+//   Schema::new(Query, EmptyMutation::<Database>::new())
+// }
 
 #[tokio::main]
 async fn main() {
-  env_logger::init();
-  log::info!("Starting up the Fishhead Labs server\n");
+   env::set_var(
+      "RUST_LOG",
+      "debug, warp_server=info, cache=debug, client=debug, postgres=debug",
+   );
+   env_logger::init();
+   log::info!("\n\n--->  Starting up the Fishhead Labs server\n");
 
-  env::set_var("RUST_LOG", "warp_server");
-  env_logger::init();
+   /*
+   // 1. Create the cache (Orgs only)
+   2. Make graphql queryable
+   3. Assert a test query of all data works without error
+   4. Start the server
+   5. Import the data from sheets
+   6. Add import_sheet function/mutation
+   7. Link mutation to page on UI
+   8. Add tasks to cache
+      - Counts/Errors
+      - Status
+      - Diffs (Patchwork)
+   9. Add polling to UI to show state of import
+      - Update counter (unchanged, new, errors per sheet imported)
+      - Hidden link for changes
+      - Visible but collapsable link for
+      - On complete, pull the updated data
+   ** MILESTONE **
+   1. Add UI org viewer
 
-  let log = warp::log("warp_server");
+   */
 
-  let homepage = warp::path::end().map(|| {
-    Response::builder()
-      .header("content-type", "text/html")
-      .body(format!(
-        "<html><h1>juniper_warp</h1><div>visit <a href=\"/graphiql\">/graphiql</a></html>"
-      ))
-  });
+   //   tests::{model::Database, schema::Query},
+   let log = warp::log("warp_server");
 
-  log::info!("Listening on 127.0.0.1:8080");
+   let homepage = warp::path::end().map(|| {
+      Response::builder()
+         .header("content-type", "text/html")
+         .body(format!(
+            "<html><h1>juniper_warp</h1><div>visit <a href=\"/graphiql\">/graphiql</a></html>"
+         ))
+   });
 
-  let state = warp::any().map(move || Database::new());
-  let graphql_filter = juniper_warp::make_graphql_filter(schema(), state.boxed());
+   log::info!("Listening on 0.0.0.0:8080");
 
-  warp::serve(
-    warp::get()
-      .and(warp::path("graphiql"))
-      .and(juniper_warp::graphiql_filter("/graphql", None))
-      .or(homepage)
-      .or(warp::path("graphql").and(graphql_filter))
-      .with(log),
-  )
-  .run(([127, 0, 0, 1], 8080))
-  .await
+   let state = warp::any().map(move || JuniperCache::new());
+   let graphql_filter =
+      juniper_warp::make_graphql_filter(JuniperCache::get_schema(), state.boxed());
+
+   warp::serve(
+      warp::get2()
+         .and(warp::path("graphiql"))
+         .and(juniper_warp::graphiql_filter("/graphql"))
+         .or(homepage)
+         .or(warp::path("graphql").and(graphql_filter))
+         .with(log),
+   )
+   .run(([0, 0, 0, 0], 8080));
 }

@@ -219,7 +219,7 @@ cd $WORKDIR
 init
 
 # And run it the first time before the loop so we don't have to wait for the update
-rebuild_project
+# rebuild_project
 
 while true; do
   command -v inotifywait > /dev/null 2>&1 || $(echo -e "InotifyWait not installed" && exit 1)
@@ -257,7 +257,7 @@ while true; do
       restart_service server
 
     elif [[ $FILE_PATH =~ "^.?/.+.rs$" ]]; then
-      rebuild_project
+      restart_service server
 
     elif [[ $FILE_PATH =~ "^.?/.+.sql$" ]]; then
       reset_db
@@ -269,5 +269,7 @@ while true; do
       echo -en "No Match on '${FILE_PATH}'': Continuing\n"
     fi
   fi
+
+  echo -e "$SEP"
 
 done
