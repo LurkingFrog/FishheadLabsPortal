@@ -4,3 +4,9 @@
 # Rust
 target/
 **/*.rs.bk
+
+# Other Projects
+/Subpar
+/Gappi
+/Wrapi
+/yup-oauth2

@@ -8,6 +8,8 @@
 use std::env;
 
 use cache::*;
+use std::sync::Arc;
+use tokio::runtime::Runtime;
 use warp::{http::Response, Filter};
 
 // use juniper::{
@@ -65,8 +67,7 @@ async fn main() {
    });
 
    log::info!("Listening on 0.0.0.0:8080");
-
-   let state = warp::any().map(move || JuniperCache::new());
+   let state = warp::any().map(move || JuniperCache::new(Arc::new(Runtime::new().unwrap())));
    let graphql_filter =
       juniper_warp::make_graphql_filter(JuniperCache::get_schema(), state.boxed());
 

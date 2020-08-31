@@ -10,9 +10,11 @@
 pub mod address;
 pub mod contact;
 pub mod organization;
+pub mod taskinfo;
 
 pub use address::*;
 pub use contact::*;
 pub use organization::*;
+pub use taskinfo::*;
 
 use super::CacheError;

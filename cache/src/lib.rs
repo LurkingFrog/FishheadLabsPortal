@@ -6,15 +6,17 @@
 
 use anyhow::Result;
 use juniper::{graphql_value, FieldError, FieldResult};
-use std::cell::RefCell;
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 use uuid::Uuid;
 
 pub mod errors;
 pub mod models;
+pub mod transforms;
 
 pub use errors::CacheError;
 use models::*;
+use transforms::*;
 
 // Enable us to use the ? operator on graphql objects
 macro_rules! to_field_error {
@@ -38,6 +40,7 @@ pub struct Cache {
   // This is a lookup based on Org Guid, for now
   contacts: HashMap<Uuid, ContactMap>,
   addresses: HashMap<Uuid, Address>,
+  tasks: HashMap<Uuid, TaskInfo>,
 }
 
 impl std::fmt::Display for Cache {
@@ -67,11 +70,19 @@ impl Cache {
 pub type CacheSchema = juniper::RootNode<'static, Query, Mutation>;
 
 /// Store the cache in a refcell for use with Juniper
-pub struct JuniperCache(RefCell<Cache>);
+#[derive(Clone)]
+pub struct JuniperCache {
+  pub runtime: Arc<tokio::runtime::Runtime>,
+  pub data: Arc<Mutex<Cache>>,
+}
+
 impl juniper::Context for JuniperCache {}
 impl JuniperCache {
-  pub fn new() -> JuniperCache {
-    JuniperCache(RefCell::new(Cache::new()))
+  pub fn new(runtime: Arc<tokio::runtime::Runtime>) -> JuniperCache {
+    JuniperCache {
+      runtime,
+      data: Arc::new(Mutex::new(Cache::new())),
+    }
   }
 
   pub fn get_schema() -> CacheSchema {
@@ -94,8 +105,9 @@ impl Query {
 
   fn get_orgs(context: &JuniperCache) -> FieldResult<Vec<Organization>> {
     let result = context
-      .0
-      .borrow()
+      .data
+      .lock()
+      .unwrap()
       .organizations
       .values()
       .into_iter()
@@ -112,21 +124,53 @@ pub struct Mutation;
     Context = JuniperCache,
 )]
 impl Mutation {
+  fn import_workbook(
+    context: &JuniperCache,
+    input: transforms::sheets::ImportWorkbook,
+  ) -> FieldResult<TaskInfo> {
+    let mut task_info = TaskInfo::new("import_workbook".to_string());
+    context.runtime.enter(|| {
+      let db = context.data.clone();
+      let task_id = task_info.guid.clone();
+      tokio::spawn(async move {
+        input.run_import(db, task_id);
+      })
+    });
+
+    Ok(task_info)
+  }
+
   fn createOrganization(
     context: &JuniperCache,
     input: OrganizationInput,
   ) -> FieldResult<Organization> {
-    let new_org = context.0.borrow_mut().create_organization(input.clone());
+    let mut cache = context.data.lock().unwrap();
+    let new_org = cache.create_organization(input.clone());
 
     match new_org {
       Ok(x) => Ok(x),
       Err(err) => to_field_error!(err, "There was a probelm creating the new organization"),
     }
-    // {
-    // Err(err) => to_field_error!(
-    //   err,
-    //   "The organizations in the cache are unavailable for insert, please retry later"
-    // ),
-    // Ok(x) => x
   }
 }
+
+/*
+mutation Importer($input: ImportWorkbook!) {
+  importWorkbook(input: $input) {
+    guid
+    state
+    name
+    status
+    errors
+  }
+}
+
+{
+  "input": {
+    "sheetId": "1Y-swLK2kje-BSFIXIVNQNejNsLO8GamTST9LmZsPwLI",
+    "sheetNames": []
+  }
+}
+
+
+*/

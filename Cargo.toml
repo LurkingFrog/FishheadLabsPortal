@@ -4,4 +4,6 @@ members = [
   "client",
   "postgres",
   "server",
+  "google_sheets",
 ]
+exclude = ["External/"]

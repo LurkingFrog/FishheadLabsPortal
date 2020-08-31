@@ -25,8 +25,8 @@ PG_PASS=
 
 
 # Some project groupings. These are used so I can figure out the correct containers to manage
-ALL=('cache' 'postgres' 'sheets' 'client' 'portal' 'server')
-SERVER="cache postgres server sheets"
+ALL=('cache' 'postgres' 'google_sheets' 'client' 'portal' 'server' 'External/Gappi' 'External/Wrapi' 'External/Subpar')
+SERVER="cache postgres server sheets External"
 CLIENT="cache client portal"
 
 
