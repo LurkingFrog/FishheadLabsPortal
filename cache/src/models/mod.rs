@@ -9,11 +9,13 @@
 
 pub mod address;
 pub mod contact;
+pub mod identity;
 pub mod organization;
 pub mod taskinfo;
 
 pub use address::*;
 pub use contact::*;
+pub use identity::*;
 pub use organization::*;
 pub use taskinfo::*;
 

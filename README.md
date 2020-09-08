@@ -33,8 +33,26 @@ some RPC function calls.
 
 ### Milestone 1
 
-- Setup Cargo.toml for each project and workspace
-- Create simple HashMap with random values in Cache
-- Derive GraphQL values as feature in Cache
-- Create Server with Warp to serve Cache
-- Make "get_orgs" in Client
+1. - Create the cache (Orgs only)
+2. - Make graphql queryable
+3. - Add import_sheet function/mutation
+4. Add task tracking in importer
+5. Import the data from sheets
+6. Start the server
+7. Assert a test query of all data works without error
+8. Link mutation to page on UI
+9. Add tasks to cache
+   - Counts/Errors
+   - Status
+   - Diffs (Patchwork)
+
+10. Add polling to UI to show state of import
+    - Update counter (unchanged, new, errors per sheet imported)
+    - Hidden link for changes
+    - Visible but collapsable link for
+    - On complete, pull the updated data
+
+**MILESTONE**
+
+1. Add UI org viewer
+2.

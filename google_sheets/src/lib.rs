@@ -19,7 +19,7 @@ impl SheetsImporter {}
 
 use anyhow::{Context, Result};
 
-use subpar::{ExcelObject, MetaWorkbook, SubparError, SubparTable};
+use subpar::{ExcelObject, MetaWorkbook, SubparTable};
 
 pub fn get_workbook(creds: &str, sheet_id: &str) -> Result<FHLWorkbook> {
   log::debug!("Loading a workbook");
@@ -59,7 +59,7 @@ impl std::fmt::Display for FHLWorkbook {
 /// A helper function used to partially deal with embedded JSON.
 ///
 /// This is used in line items in a
-fn cell_csv_to_vec(column: &str, wrapped: &ExcelObject) -> Result<Vec<String>, SubparError> {
+fn cell_csv_to_vec(column: &str, wrapped: &ExcelObject) -> Result<Vec<String>> {
   let row = wrapped
     .unwrap_row()
     .expect("There was an error unwrapping the object in cell_csv_to_vec");
@@ -91,7 +91,7 @@ fn cell_csv_to_vec(column: &str, wrapped: &ExcelObject) -> Result<Vec<String>, S
 ///
 /// This should likely become mapped to a many-to-many role
 /// Denise Petty is a good example, submitting from half a dozen different orgs
-fn parse_members(wrapped: &ExcelObject) -> Result<Vec<i32>, SubparError> {
+fn parse_members(wrapped: &ExcelObject) -> Result<Vec<i32>> {
   let members = cell_csv_to_vec("Members", wrapped)?;
   let result = vec![];
   members.iter().fold(Ok(result), |acc, member| match acc {
@@ -106,7 +106,7 @@ fn parse_members(wrapped: &ExcelObject) -> Result<Vec<i32>, SubparError> {
   })
 }
 
-fn parse_children(wrapped: &ExcelObject) -> Result<Vec<i32>, SubparError> {
+fn parse_children(wrapped: &ExcelObject) -> Result<Vec<i32>> {
   let children = cell_csv_to_vec("Children", wrapped)?;
   let result = vec![];
   children.iter().fold(Ok(result), |acc, child| match acc {

@@ -1741,6 +1741,7 @@ dependencies = [
  "subpar_derive",
  "thiserror",
  "url 2.1.1",
+ "uuid 0.8.1",
  "wrapi",
  "yup-oauth2",
 ]
@@ -1749,6 +1750,7 @@ dependencies = [
 name = "subpar_derive"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "env_logger",
  "proc-macro2",
  "quote",

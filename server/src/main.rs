@@ -33,29 +33,6 @@ async fn main() {
    env_logger::init();
    log::info!("\n\n--->  Starting up the Fishhead Labs server\n");
 
-   /*
-   // 1. Create the cache (Orgs only)
-   2. Make graphql queryable
-   3. Assert a test query of all data works without error
-   4. Start the server
-   5. Import the data from sheets
-   6. Add import_sheet function/mutation
-   7. Link mutation to page on UI
-   8. Add tasks to cache
-      - Counts/Errors
-      - Status
-      - Diffs (Patchwork)
-   9. Add polling to UI to show state of import
-      - Update counter (unchanged, new, errors per sheet imported)
-      - Hidden link for changes
-      - Visible but collapsable link for
-      - On complete, pull the updated data
-   ** MILESTONE **
-   1. Add UI org viewer
-
-   */
-
-   //   tests::{model::Database, schema::Query},
    let log = warp::log("warp_server");
 
    let homepage = warp::path::end().map(|| {

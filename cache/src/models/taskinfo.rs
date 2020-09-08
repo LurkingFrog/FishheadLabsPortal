@@ -1,9 +1,12 @@
 //! Track the state of long running processes
 
-use super::CacheError;
+use anyhow::{Context, Result};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-pub trait TaskStatus: std::fmt::Display + std::fmt::Debug + juniper::GraphQLType {}
+use super::CacheError;
+
+pub trait TaskStatus<'de>: Default + Deserialize<'de> + Serialize {}
 
 #[derive(juniper::GraphQLObject, Clone, Debug, Default)]
 pub struct TaskInfo {
@@ -11,8 +14,7 @@ pub struct TaskInfo {
   pub state: TaskState,
   pub name: String,
   // status: Option<Rc<dyn TaskStatus>>,
-  pub status: Vec<String>,
-  pub errors: Vec<CacheError>,
+  status: String,
 }
 
 impl std::fmt::Display for TaskInfo {
@@ -27,9 +29,16 @@ impl TaskInfo {
       guid: Uuid::new_v4(),
       state: TaskState::Pending,
       name: name,
-      status: vec![],
-      errors: vec![],
+      status: Default::default(),
     }
+  }
+
+  pub fn set_status<'a>(&mut self, status: impl TaskStatus<'a>) -> Result<()> {
+    self.status = serde_json::to_string(&status).context(format!(
+      "Could not serialize the status for TaskInfo '{}'",
+      self.guid
+    ))?;
+    Ok(())
   }
 }
 

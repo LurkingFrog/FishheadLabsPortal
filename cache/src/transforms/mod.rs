@@ -5,7 +5,7 @@
 pub mod sheets;
 // pub mod postgres;
 
-use super::{Cache, CacheError, JuniperCache, TaskInfo};
+use super::{Cache, CacheError, TaskState, TaskStatus};
 
 // pub use postgres::*;
 

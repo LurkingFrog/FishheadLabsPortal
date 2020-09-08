@@ -4,10 +4,10 @@
 //! THINK: Any good way to work around Input and Output objects needing to be different?
 //!        https://github.com/graphql-rust/juniper/issues/173
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use juniper::{graphql_value, FieldError, FieldResult};
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 use uuid::Uuid;
 
 pub mod errors;
@@ -16,7 +16,6 @@ pub mod transforms;
 
 pub use errors::CacheError;
 use models::*;
-use transforms::*;
 
 // Enable us to use the ? operator on graphql objects
 macro_rules! to_field_error {
@@ -28,29 +27,27 @@ macro_rules! to_field_error {
   };
 }
 
-pub trait CacheTransform {
-  fn import(&self, cache: Option<Cache>) -> Result<()>;
-  fn export(&self, cache: Cache) -> Result<()>;
-}
-
 /// A local, denormalized copy of the Fishhead Labs data
 #[derive(Clone, Debug, Default)]
-pub struct Cache {
+pub struct CacheData {
   organizations: HashMap<Uuid, Organization>,
-  // This is a lookup based on Org Guid, for now
+  // This is a lookup based on Org Guid, for now.
+  // TODO: Swap contacts with ContextMap<Organization, User>
   contacts: HashMap<Uuid, ContactMap>,
   addresses: HashMap<Uuid, Address>,
+
+  // Can most likely turn this into a taskmaster for more rigid controls
   tasks: HashMap<Uuid, TaskInfo>,
 }
 
-impl std::fmt::Display for Cache {
+impl std::fmt::Display for CacheData {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(f, "{:#?}", self)
   }
 }
 
-impl Cache {
-  pub fn new() -> Cache {
+impl CacheData {
+  pub fn new() -> CacheData {
     Default::default()
   }
 
@@ -65,15 +62,83 @@ impl Cache {
   }
 }
 
+macro_rules! borrow_read {
+  ($locked:expr) => {
+    $locked.read().map_or_else(
+      |err| {
+        log::error!("Error getting a read lock on the database:\n{:#?}", err);
+        Err(CacheError::DbWriteError)
+      },
+      |db| Ok(db),
+    )
+  };
+}
+
+macro_rules! borrow_write {
+  ($locked:expr) => {
+    $locked.write().map_or_else(
+      |err| {
+        log::error!("Error getting a write lock on the database:\n{:#?}", err);
+        Err(CacheError::DbWriteError)
+      },
+      |db| Ok(db),
+    )
+  };
+}
+
+/// A local, denormalized copy of the Fishhead Labs data
+#[derive(Clone, Debug, Default)]
+pub struct Cache(Arc<RwLock<CacheData>>);
+impl Cache {
+  pub fn new() -> Cache {
+    Default::default()
+  }
+
+  // CRUD for Tasks
+  pub fn create_task(&self, task: TaskInfo) -> Result<TaskInfo> {
+    let mut db = borrow_write!(self.0).context(format!(
+      "Could not write the new task '{}' to the database",
+      task.guid
+    ))?;
+    db.tasks.insert(task.guid.clone(), task.clone());
+    Ok(task)
+  }
+
+  pub fn retrieve_task(&self, task_id: Uuid) -> Result<TaskInfo> {
+    let db = borrow_read!(self.0).context(format!(
+      "Could not search the database for task '{}'",
+      task_id
+    ))?;
+    db.tasks.get(&task_id).map_or(
+      Err(CacheError::NotFound).context(format!(
+        "Task with ID '{}' was not found in the cache",
+        task_id
+      )),
+      |x| Ok(x.clone()),
+    )
+  }
+
+  pub fn update_task(&self, task: TaskInfo) -> Result<()> {
+    unimplemented!("'update_task' still needs to be implemented")
+  }
+
+  // CRUD for Orgs
+  pub fn create_organization(&self, org_info: OrganizationInput) -> Result<Organization> {
+    unimplemented!("'create_organization' still needs to be implemented")
+  }
+}
+
 // A root schema consists of a query and a mutation.
 // Request queries can be executed against a RootNode.
 pub type CacheSchema = juniper::RootNode<'static, Query, Mutation>;
 
-/// Store the cache in a refcell for use with Juniper
+/// Store the CacheDatain a refcell for use with Juniper
+// TODO: Create a generic juniper filter for querying the cache instead of individual items.
+// TODO: Add CRUD macro
 #[derive(Clone)]
 pub struct JuniperCache {
   pub runtime: Arc<tokio::runtime::Runtime>,
-  pub data: Arc<Mutex<Cache>>,
+  pub data: Cache,
 }
 
 impl juniper::Context for JuniperCache {}
@@ -81,12 +146,25 @@ impl JuniperCache {
   pub fn new(runtime: Arc<tokio::runtime::Runtime>) -> JuniperCache {
     JuniperCache {
       runtime,
-      data: Arc::new(Mutex::new(Cache::new())),
+      data: Cache::new(),
     }
   }
 
   pub fn get_schema() -> CacheSchema {
     CacheSchema::new(Query, Mutation)
+  }
+
+  pub fn new_task(&self, task_name: String) -> Result<TaskInfo> {
+    let task_info = TaskInfo::new(task_name);
+    self.data.create_task(task_info)
+  }
+
+  pub fn get_task(&self, task_id: Uuid) -> Result<TaskInfo> {
+    self.data.retrieve_task(task_id)
+  }
+
+  pub fn update_task(&self, task_info: TaskInfo) -> Result<()> {
+    unimplemented!("'update_task' still needs to be implemented")
   }
 }
 
@@ -104,10 +182,7 @@ impl Query {
   }
 
   fn get_orgs(context: &JuniperCache) -> FieldResult<Vec<Organization>> {
-    let result = context
-      .data
-      .lock()
-      .unwrap()
+    let result = borrow_read!(context.data.0)?
       .organizations
       .values()
       .into_iter()
@@ -128,29 +203,26 @@ impl Mutation {
     context: &JuniperCache,
     input: transforms::sheets::ImportWorkbook,
   ) -> FieldResult<TaskInfo> {
-    let mut task_info = TaskInfo::new("import_workbook".to_string());
-    context.runtime.enter(|| {
-      let db = context.data.clone();
-      let task_id = task_info.guid.clone();
-      tokio::spawn(async move {
-        input.run_import(db, task_id);
-      })
-    });
-
-    Ok(task_info)
+    let task_info = context.new_task(format!("Importing workbook '{}'", input.sheet_id));
+    match task_info {
+      Err(err) => to_field_error!(err, "Could not create a new Import Workbook task"),
+      Ok(task_info) => context.runtime.enter(|| {
+        let db = context.data.clone();
+        let task_id = task_info.guid.clone();
+        tokio::spawn(async move { input.run_import(db, task_id).await });
+        Ok(task_info)
+      }),
+    }
   }
 
   fn createOrganization(
     context: &JuniperCache,
     input: OrganizationInput,
   ) -> FieldResult<Organization> {
-    let mut cache = context.data.lock().unwrap();
-    let new_org = cache.create_organization(input.clone());
-
-    match new_org {
-      Ok(x) => Ok(x),
-      Err(err) => to_field_error!(err, "There was a probelm creating the new organization"),
-    }
+    context.data.create_organization(input.clone()).map_or_else(
+      |err| to_field_error!(err, "There was a probelm creating the new organization"),
+      |x| Ok(x),
+    )
   }
 }
 
@@ -171,6 +243,4 @@ mutation Importer($input: ImportWorkbook!) {
     "sheetNames": []
   }
 }
-
-
 */
