@@ -21,15 +21,19 @@ use anyhow::{Context, Result};
 
 use subpar::{ExcelObject, MetaWorkbook, SubparTable};
 
-pub fn get_workbook(creds: &str, sheet_id: &str) -> Result<FHLWorkbook> {
-  log::debug!("Loading a workbook");
+pub fn open_workbook(creds: &str, sheet_id: &str) -> Result<subpar::Workbook> {
+  log::debug!("Opening a workbook");
   let db_conf = subpar::WorkbookConfig::new_sheets_config(
     Some(sheet_id.to_string()),
     creds.to_string(),
     "fhl@landfillinc.com".to_string(),
   );
-  let wb = subpar::Workbook::open(&db_conf)
-    .context(format!("Could not get the workbook '{}'", sheet_id))?;
+  subpar::Workbook::open(&db_conf).context(format!("Could not open the workbook '{}'", sheet_id))
+}
+
+pub fn get_workbook(creds: &str, sheet_id: &str) -> Result<FHLWorkbook> {
+  log::debug!("Loading a workbook");
+  let wb = open_workbook(creds, sheet_id)?;
   Ok(FHLWorkbook::from_excel(&ExcelObject::Workbook(wb.clone()))?)
 }
 

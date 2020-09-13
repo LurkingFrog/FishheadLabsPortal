@@ -25,6 +25,9 @@ pub enum CacheError {
   #[error("The database connection could not be locked for writing")]
   DbWriteError,
 
+  #[error("The value received fails validation")]
+  InvalidValue,
+
   #[error("A group of multiple errors")]
   ErrorList(Vec<CacheError>),
 }

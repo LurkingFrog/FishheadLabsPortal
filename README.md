@@ -42,6 +42,7 @@ some RPC function calls.
 7. Assert a test query of all data works without error
 8. Link mutation to page on UI
 9. Add tasks to cache
+
    - Counts/Errors
    - Status
    - Diffs (Patchwork)
@@ -55,4 +56,3 @@ some RPC function calls.
 **MILESTONE**
 
 1. Add UI org viewer
-2.

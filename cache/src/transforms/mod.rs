@@ -2,11 +2,10 @@
 //!
 //!
 
-pub mod sheets;
+pub mod google_sheets;
 // pub mod postgres;
 
 use super::{Cache, CacheError, TaskState, TaskStatus};
 
 // pub use postgres::*;
-
-// pub use sheets::*;
+pub use google_sheets::{ImportWorkbook, ImportWorkbookStatus};

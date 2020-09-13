@@ -24,19 +24,38 @@ impl std::fmt::Display for ImportWorkbook {
 }
 
 impl ImportWorkbook {
+  // THINK: Permissions on the task_info: should it be locked so only this process can update it?
   pub async fn run_import(&self, db: Cache, task_id: Uuid) -> Result<()> {
     log::warn!("Running the import");
-    let task_status = ImportWorkbookStatus::new();
+    let mut task_status = ImportWorkbookStatus::new();
     let mut task_info = db.retrieve_task(task_id)?;
 
     // Update task to Running with an empty state
     task_info.state = TaskState::Running;
-    task_info.set_status(task_status)?;
-    db.update_task(task_info.clone())?;
+    task_info.set_status(&task_status)?;
+    db.update_task(task_info.clone())
+      .context("Failed to update task")?;
 
-    // Get Metadata from Workbook
+    // TODO: Link the credentials to the user. Look into OAuth2 login to get token from google
+    let creds = "/project/fhl_service_acct.json";
 
     // Update task info to "Importing **Metadata**
+    let wb = sheets::open_workbook(creds, &self.sheet_id)?;
+    wb.metadata.sheet_map.get("organizations").map_or(
+      Err(CacheError::NotFound).context(format!(
+        "Sheet 'organizations' not found in workbook '{}'",
+        wb.metadata.name
+      )),
+      |metadata| {
+        task_status.organizations.total_rows = metadata.range.0.clone() as i32;
+        Ok(())
+      },
+    )?;
+
+    task_info.set_status(&task_status)?;
+    db.update_task(task_info.clone())
+      .context("Failed to update task")?;
+    log::debug!("wb.metadata:\n{:#?}", task_info);
 
     // Pull Organizations from Sheets
 
@@ -47,8 +66,6 @@ impl ImportWorkbook {
     // Task Info Steps:
     //
 
-    log::debug!("Got the task info {:#?}", task_info);
-
     log::warn!("Done running the importer");
     Ok(())
   }
@@ -56,7 +73,7 @@ impl ImportWorkbook {
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct ImportWorkbookStatus {
-  metadata: String,
+  organizations: WorksheetStatus,
   errors: Option<CacheError>,
 }
 
@@ -73,6 +90,30 @@ impl ImportWorkbookStatus {
     Default::default()
   }
 }
+
+/*
+  organization ->
+    to_read ->
+    read ->
+    processed ->
+*/
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct WorksheetStatus {
+  total_rows: i32,
+  read: i32,
+  processed: i32,
+  skipped: i32,
+  errors: Vec<CacheError>,
+}
+
+impl std::fmt::Display for WorksheetStatus {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{:#?}", self)
+  }
+}
+
+impl WorksheetStatus {}
 
 // pub fn get_address() -> Result<Address> {
 //   Address::new_us(

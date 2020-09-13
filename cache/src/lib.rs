@@ -118,12 +118,19 @@ impl Cache {
     )
   }
 
-  pub fn update_task(&self, task: TaskInfo) -> Result<()> {
-    unimplemented!("'update_task' still needs to be implemented")
+  // TODO: Turn this into a patch
+  pub fn update_task(&self, task: TaskInfo) -> Result<TaskInfo> {
+    let mut db = borrow_write!(self.0).context(format!(
+      "Could not write the updated task '{}' to the database",
+      task.guid
+    ))?;
+
+    let _previous = db.tasks.insert(task.guid.clone(), task.clone());
+    Ok(task.clone())
   }
 
   // CRUD for Orgs
-  pub fn create_organization(&self, org_info: OrganizationInput) -> Result<Organization> {
+  pub fn create_organization(&self, _org_info: OrganizationInput) -> Result<Organization> {
     unimplemented!("'create_organization' still needs to be implemented")
   }
 }
@@ -163,7 +170,7 @@ impl JuniperCache {
     self.data.retrieve_task(task_id)
   }
 
-  pub fn update_task(&self, task_info: TaskInfo) -> Result<()> {
+  pub fn update_task(&self, _task_info: TaskInfo) -> Result<()> {
     unimplemented!("'update_task' still needs to be implemented")
   }
 }
@@ -201,7 +208,7 @@ pub struct Mutation;
 impl Mutation {
   fn import_workbook(
     context: &JuniperCache,
-    input: transforms::sheets::ImportWorkbook,
+    input: transforms::google_sheets::ImportWorkbook,
   ) -> FieldResult<TaskInfo> {
     let task_info = context.new_task(format!("Importing workbook '{}'", input.sheet_id));
     match task_info {

@@ -3,7 +3,7 @@
 
 export CLICOLOR_FORCE=1
 export RUST_BACKTRACE=1;
-export RUST_LOG=debug,test=debug;
+export RUST_LOG=warn,test=debug,cache=debug,client=debug,server=debug;
 export USER_ID=$(id -u):$(id -g)
 # export RUSTFLAGS="-Z macro-backtrace -Z debug-macros"
 
@@ -25,7 +25,7 @@ PG_PASS=
 
 
 # Some project groupings. These are used so I can figure out the correct containers to manage
-ALL=('cache' 'postgres' 'google_sheets' 'client' 'portal' 'server' 'External/Gappi' 'External/Wrapi' 'External/Subpar')
+ALL=('cache' 'postgres' 'google_sheets' 'client' 'portal' 'server' 'External/Gappi/' 'External/Wrapi' 'External/Subpar')
 SERVER="cache postgres server sheets External"
 CLIENT="cache client portal"
 
@@ -160,7 +160,7 @@ function build_docs {
 function rebuild_compose {
     echo -e "${SEP}Rebuilding Docker Compose"
     $COMPOSE down
-    $COMPOSE up -d --remove-orphans postgres
+    # $COMPOSE up -d --remove-orphans postgres
     wait_postgres
     reset_db
 }
@@ -190,6 +190,14 @@ function restart_service() {
   sleep 1
 }
 
+function test_server() {
+  echo -e "${SEP}Running Test on server"
+  $COMPOSE ps -a | grep Exit | cut -d ' ' -f 1 | xargs sudo docker rm
+  $COMPOSE run -e RUST_LOG=${RUST_LOG} $1 cargo test -- --nocapture
+  $COMPOSE logs -f $1 &
+  sleep 2
+}
+
 function init {
   echo -e "${SEP}Running initialization"
 
@@ -197,7 +205,7 @@ function init {
   get_ripgrep
 
   # pg_init
-  restart_service server
+  # restart_service server
   # restart portal
 
   mkdir -p $WORKDIR/pdfs
@@ -223,7 +231,7 @@ init
 
 while true; do
   command -v inotifywait > /dev/null 2>&1 || $(echo -e "InotifyWait not installed" && exit 1)
-  EVENT=$(inotifywait -r -e modify \
+  EVENT=$(inotifywait -r --exclude target -e modify \
     $INIT_DIR/watcher.sh \
     $INIT_DIR/Cargo.toml \
     $(for x in $ALL; do echo -e "$INIT_DIR/$x\n"; done) \
@@ -254,10 +262,12 @@ while true; do
   elif isIn $PROJECT $SERVER; then
     echo -e "Change to Server Project"
     if [[ $FILE_PATH =~ ".?/Cargo.toml$" ]]; then
-      restart_service server
+      # restart_service server
+      test_server server
 
     elif [[ $FILE_PATH =~ "^.?/.+.rs$" ]]; then
-      restart_service server
+      # restart_service server
+      test_server server
 
     elif [[ $FILE_PATH =~ "^.?/.+.sql$" ]]; then
       reset_db
