@@ -65,7 +65,7 @@ pub fn run_query(
    query: &str,
    variables: juniper::Variables,
 ) -> Result<juniper::Value> {
-   println!("Running the query:\n{}\n{:#?}", query, variables);
+   log::debug!("Running the query:\n{}\n{:#?}", query, variables);
    let (res, error) =
       juniper::execute(query, None, &JuniperCache::get_schema(), &variables, &ctx).unwrap();
 
@@ -82,6 +82,7 @@ pub fn run_query(
 #[test]
 fn test_task_info() {
    env_logger::init();
+   use cache::models::TaskInfo;
    use cache::transforms::ImportWorkbook;
    use juniper::ToInputValue;
 
@@ -102,8 +103,9 @@ fn test_task_info() {
    mutation Importer($input: ImportWorkbook!) {
       importWorkbook(input: $input) {
         guid
-        state
         name
+        lastModified
+        state
         status
       }
     }
@@ -119,9 +121,14 @@ fn test_task_info() {
       .to_input_value(),
    );
 
-   let task = run_query(&ctx, import_workbook_query, import_config).unwrap();
-
-   log::debug!("Task:\n{:#?}", task);
+   let res = run_query(&ctx, import_workbook_query, import_config).unwrap();
+   let task = TaskInfo::from_juniper_value(
+      res.as_object_value()
+         .unwrap()
+         .get_field_value("importWorkbook")
+         .unwrap(),
+   );
+   log::debug!("Task Started:\n{:#?}", task);
 
    let _get_task_query = r#"
     query {

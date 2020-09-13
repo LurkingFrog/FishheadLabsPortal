@@ -3,6 +3,7 @@
 use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use uuid::Uuid;
 
 use super::CacheError;
@@ -45,8 +46,13 @@ impl TaskInfo {
     }
   }
 
-  pub fn from_juniper_value(value: juniper::Value) -> Result<TaskInfo> {
+  pub fn from_juniper_value(value: &juniper::Value) -> Result<TaskInfo> {
+    // let values: HashMap<&str, juniper::Value> = HashMap::new();
     let values = value.as_object_value().unwrap();
+    log::debug!("From Juniper value:\n{:#?}", values);
+
+    // .map(|value| values.insert(value.0.clone(), value.1.clone()));
+
     let guid = values.get_field_value("guid").map_or(
       Err(CacheError::NotFound).context(format!("'guid' field was not found in Graphql object")),
       |guid| {
@@ -102,7 +108,7 @@ impl TaskInfo {
       .clone();
 
     let last_modified = values
-      .get_field_value("last_modified")
+      .get_field_value("lastModified")
       .map_or(
         Err(CacheError::NotFound).context(format!(
           "'last_modified' field was not found in Graphql object"
@@ -135,12 +141,10 @@ impl TaskInfo {
       "Could not serialize the status for TaskInfo '{}'",
       self.guid
     ))?;
+    self.last_modified = Utc::now();
     Ok(())
   }
 }
-
-#[derive(juniper::GraphQLScalarValue, Clone, Debug)]
-pub struct Timestamp(DateTime<Utc>);
 
 ///
 #[derive(juniper::GraphQLEnum, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
