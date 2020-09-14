@@ -16,13 +16,24 @@ services:
       - "pg_data:/var/lib/postgresql/data"
 
   portal:
-    image: mhart/alpine-node:latest
+    user: $USER_ID
+    working_dir: /project/portal
+    # This will be prod
+    # image: mhart/alpine-node:latest
+    image: node:latest
     ports:
-      - 9080:80
+      - 9080:9080
     volumes:
+      - "$HOME:$HOME"
       - ".:/project"
-      - "~/.cargo:/usr/local/cargo"
       - "/etc/passwd:/etc/passwd"
+    environment:
+      DEBUG_COLORS: "true"
+      TERM: xterm-256color
+      COLORTERM: truecolor
+    tty: true
+    stdin_open: true
+    command: ["bash", "run_dev_server.sh"]
 
   server:
     user: $USER_ID

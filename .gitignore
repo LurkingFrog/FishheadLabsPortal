@@ -1,12 +1,30 @@
 
 .vscode
 
+# This is a secure file and should never be published
+*_service_acct.json
+
+# random temp files I use for debugging
+tmp.*
+
 # Rust
 target/
 **/*.rs.bk
 
+# ReasonML
+**/*.bs.js
+.DS_Store
+.merlin
+.bsb.lock
+npm-debug.log
+/portal/docker_npm
+/portal/lib/bs
+/portal/bundleOutput/
+/portal/node_modules
+
+watcher.out
+server.out
+
 # Other Projects
-/Subpar
-/Gappi
-/Wrapi
-/yup-oauth2
+/External
+

@@ -206,7 +206,7 @@ function init {
 
   # pg_init
   # restart_service server
-  # restart portal
+  restart_service portal
 
   mkdir -p $WORKDIR/pdfs
 }
@@ -257,10 +257,13 @@ while true; do
 
       # Restart all the projects if we changed the workspace
       rebuild_project
+
+    elif [[ $FILE_PATH =~ "^.?/.+.docker-compose.yml$" ]]; then
+      rebuild_compose
+
     fi
 
   elif isIn $PROJECT $SERVER; then
-    echo -e "Change to Server Project"
     if [[ $FILE_PATH =~ ".?/Cargo.toml$" ]]; then
       # restart_service server
       test_server server
@@ -278,8 +281,23 @@ while true; do
     else
       echo -en "No Match on '${FILE_PATH}'': Continuing\n"
     fi
-  fi
 
-  echo -e "$SEP"
+  elif isIn $PROJECT $CLIENT; then
+    if [[ $FILE_PATH =~ ".?/package.json$" ]]; then
+      restart_service portal
+
+    elif [[ $FILE_PATH =~ ".?/bsconfig.json$" ]]; then
+      restart_service portal
+
+    # elif [[ $FILE_PATH =~ "^.?/.+.re$" ]]; then
+    #   # Doing nothing, as watch should handle this
+    #   echo ""
+
+    # elif [[ $FILE_PATH =~ "^.?/.+.html$" ]]; then
+    #   # Doing nothing, as watch should handle this
+    #   echo ""
+
+    fi
+  fi
 
 done
