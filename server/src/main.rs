@@ -70,7 +70,7 @@ pub fn run_query(
       juniper::execute(query, None, &JuniperCache::get_schema(), &variables, &ctx).unwrap();
 
    match error.len() {
-      0 => log::debug!("res:\n{:#?}", res),
+      0 => (),
       _ => panic!(
          "Got an unexpected error from import_workbook query:\nerror\n{}\nquery\n{}\nvariables\n{}"
       ),
@@ -85,6 +85,7 @@ fn test_task_info() {
    use cache::models::TaskInfo;
    use cache::transforms::ImportWorkbook;
    use juniper::ToInputValue;
+   use std::{thread, time};
 
    // Test:
    // - Run ImportWorkbook mutation
@@ -127,14 +128,38 @@ fn test_task_info() {
          .unwrap()
          .get_field_value("importWorkbook")
          .unwrap(),
-   );
+   )
+   .unwrap();
    log::debug!("Task Started:\n{:#?}", task);
 
-   let _get_task_query = r#"
-    query {
-       tasks
+   let task_query = r#"
+    query GetTask($taskId: Uuid!) {
+       task(taskId: $taskId) {
+         guid
+         name
+         lastModified
+         state
+         status
+       }
     }
    "#;
+
+   let second = time::Duration::new(1, 0);
+   thread::sleep(second);
+
+   let mut task_id = juniper::Variables::new();
+   task_id.insert("taskId".to_string(), task.guid.to_input_value());
+   let updated = run_query(&ctx, task_query, task_id)
+      .unwrap()
+      .as_object_value()
+      .unwrap()
+      .get_field_value("task")
+      .map_or(Err(CacheError::InvalidValue), |value| {
+         Ok(TaskInfo::from_juniper_value(value))
+      })
+      .unwrap();
+
+   log::debug!("The updated task:\n{:#?}", updated);
 
    // let reload_query = r#"
    //   mutation ImportData {

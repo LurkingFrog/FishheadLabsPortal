@@ -188,6 +188,10 @@ impl Query {
     "1.0"
   }
 
+  fn task(context: &JuniperCache, task_id: Uuid) -> FieldResult<TaskInfo> {
+    Ok(context.get_task(task_id)?)
+  }
+
   fn get_orgs(context: &JuniperCache) -> FieldResult<Vec<Organization>> {
     let result = borrow_read!(context.data.0)?
       .organizations
@@ -206,7 +210,7 @@ pub struct Mutation;
     Context = JuniperCache,
 )]
 impl Mutation {
-  fn import_workbook(
+  fn importWorkbook(
     context: &JuniperCache,
     input: transforms::google_sheets::ImportWorkbook,
   ) -> FieldResult<TaskInfo> {

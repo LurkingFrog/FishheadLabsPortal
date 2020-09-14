@@ -49,9 +49,6 @@ impl TaskInfo {
   pub fn from_juniper_value(value: &juniper::Value) -> Result<TaskInfo> {
     // let values: HashMap<&str, juniper::Value> = HashMap::new();
     let values = value.as_object_value().unwrap();
-    log::debug!("From Juniper value:\n{:#?}", values);
-
-    // .map(|value| values.insert(value.0.clone(), value.1.clone()));
 
     let guid = values.get_field_value("guid").map_or(
       Err(CacheError::NotFound).context(format!("'guid' field was not found in Graphql object")),

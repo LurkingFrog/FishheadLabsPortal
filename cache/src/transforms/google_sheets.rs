@@ -55,9 +55,12 @@ impl ImportWorkbook {
     task_info.set_status(&task_status)?;
     db.update_task(task_info.clone())
       .context("Failed to update task")?;
-    log::debug!("wb.metadata:\n{:#?}", task_info);
+    log::debug!("wb.metadata step:\n{:#?}", task_info);
 
+    // TODO: Convert Subpar to be more granular
     // Pull Organizations from Sheets
+    let _fhl_wb = sheets::get_workbook(creds, &self.sheet_id);
+    // task_status.organizations.read = fhl_wb.organizations.len();
 
     // Update Task info "Read x Orgs of y"
 
