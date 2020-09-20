@@ -1,25 +1,32 @@
-// Entry point
+/* The entrypoint to the portal */
+[@bs.val] external document: Js.t({..}) = "document";
 
-// ReactDOMRe.render(<Layout.App />, root);
+let makeContainer = text => {
+  let container = document##createElement("div");
+  container##className #= "container";
 
-// // We're using raw DOM manipulations here, to avoid making you read
-// // ReasonReact when you might precisely be trying to learn it for the first
-// // time through the examples later.
-// let style = document##createElement("style");
-// document##head##appendChild(style);
-// style##innerHTML #= ExampleStyles.style;
+  let title = document##createElement("div");
+  title##className #= "containerTitle";
+  title##innerText #= text;
 
-// // // All 4 examples.
-// ReactDOMRe.render(
-//   <BlinkingGreeting> {React.string("Hello!")} </BlinkingGreeting>,
-//   makeContainer("Blinking Greeting"),
-// );
+  let content = document##createElement("div");
+  content##className #= "containerContent";
 
-// ReactDOMRe.render(<ReducerFromReactJSDocs />, makeContainer("Reducer From ReactJS Docs"));
+  let () = container##appendChild(content);
+  let () = document##body##appendChild(container);
 
-// ReactDOMRe.render(<FetchedDogPictures />, makeContainer("Fetched Dog Pictures"));
+  content;
+};
 
-// ReactDOMRe.render(<ReasonUsingJSUsingReason />, makeContainer("Trying chane ithane again"));
+// FIXME: This assumes that the full path is included, may not work for prod mode
+let linkCss = text => {
+  let css = document##createElement("link");
+  let () = css##setAttribute("rel", "stylesheet");
+  let () = css##setAttribute("type", "text/css");
+  let () = css##setAttribute("href", text);
+  let () = document##head##appendChild(css);
+  ();
+};
 
 let reducer = (state: Cache.t, action) => {
   Js.log("In the reducer with action");
@@ -44,40 +51,23 @@ module App = {
   [@react.component]
   let make = () => {
     let (state, dispatch) = React.useReducer(reducer, Cache.default());
+    let () = linkCss("./src/index.css");
+    let () = linkCss("./src/assets/css/animate.min.css");
+    let () = linkCss("./src/assets/css/atlant-theme-default.css");
 
     // Check Login
-    let isLoggedIn = None->Session.isLoggedIn;
 
     let url = ReasonReactRouter.useUrl();
 
     Js.log(url);
 
     let body =
-      switch (isLoggedIn) {
+      switch (None->Session.isLoggedIn) {
       | false => <LoginPage state dispatch />
-      | true => React.string("Already logged in")
+      | true => React.string("Already logged in. TODO: Add the main page")
       };
     <div> body </div>;
   };
-};
-
-[@bs.val] external document: Js.t({..}) = "document";
-
-let makeContainer = text => {
-  let container = document##createElement("div");
-  container##className #= "container";
-
-  let title = document##createElement("div");
-  title##className #= "containerTitle";
-  title##innerText #= text;
-
-  let content = document##createElement("div");
-  content##className #= "containerContent";
-
-  let () = container##appendChild(content);
-  let () = document##body##appendChild(container);
-
-  content;
 };
 
 ReactDOMRe.render(<App />, makeContainer("root"));
