@@ -4,6 +4,8 @@ rm ./watcher.out ./server.out .bsb.lock
 echo -e "Installing npm modules"
 npm i
 
+npm run clean
+
 echo -e "Starting the watcher in the background"
 nohup npm run start > watcher.out &
 

@@ -23,6 +23,7 @@ services:
     image: node:latest
     ports:
       - 9080:9080
+      - 9082:9082
     volumes:
       - "$HOME:$HOME"
       - ".:/project"

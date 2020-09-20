@@ -231,7 +231,7 @@ init
 
 while true; do
   command -v inotifywait > /dev/null 2>&1 || $(echo -e "InotifyWait not installed" && exit 1)
-  EVENT=$(inotifywait -r --exclude target -e modify \
+  EVENT=$(inotifywait -q -r --exclude target -e modify \
     $INIT_DIR/watcher.sh \
     $INIT_DIR/Cargo.toml \
     $(for x in $ALL; do echo -e "$INIT_DIR/$x\n"; done) \
