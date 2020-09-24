@@ -2,13 +2,12 @@
 //
 // This manages items that control session authentication
 type t = {
-  currentUser: option(string),
-  token: option(string),
+  currentUser: string,
+  token: string,
 };
 
-let default = () => {currentUser: None, token: None};
-
 let isLoggedIn = (session: option(t)) => {
+  Js.log("Checking auth");
   switch (session) {
   | None => false
   | Some(_session) => true

@@ -1,5 +1,6 @@
-module Session = {
-  type t =
-    | Login
-    | Logout;
-};
+type sessionAction =
+  | Create(Session.t)
+  | End;
+
+type t =
+  | Session(sessionAction);

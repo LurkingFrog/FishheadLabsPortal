@@ -28,31 +28,23 @@ let linkCss = text => {
   ();
 };
 
-let reducer = (state: Cache.t, action) => {
-  Js.log("In the reducer with action");
-  Js.log(action);
-  switch (action) {
-  | Actions.Session.Login => {
-      ...state,
-      local: {
-        session: Some(Session.default()),
-      },
-    }
-  | Actions.Session.Logout => {
-      ...state,
-      local: {
-        session: None,
-      },
-    }
-  };
-};
-
 module App = {
   [@react.component]
   let make = () => {
-    let (state, dispatch) = React.useReducer(reducer, Cache.default());
+    Js.log("Rendering App");
+    let session = Cache.useSelector(Cache.Selectors.session);
+
+    switch (session->Session.isLoggedIn) {
+    | false => <LoginPage />
+    | true => <AtlantLayout />
+    };
+  };
+};
+
+module Root = {
+  [@react.component]
+  let make = () => {
     let () = linkCss("./src/index.css");
-    let () = linkCss("./src/assets/css/animate.min.css");
     let () = linkCss("./src/assets/css/atlant-theme-default.css");
 
     // Check Login
@@ -61,13 +53,8 @@ module App = {
 
     Js.log(url);
 
-    let body =
-      switch (None->Session.isLoggedIn) {
-      | false => <LoginPage state dispatch />
-      | true => React.string("Already logged in. TODO: Add the main page")
-      };
-    <div> body </div>;
+    <div> <Cache.Provider store=Cache.store> <App /> </Cache.Provider> </div>;
   };
 };
 
-ReactDOMRe.render(<App />, makeContainer("root"));
+ReactDOMRe.render(<Root />, makeContainer("root"));

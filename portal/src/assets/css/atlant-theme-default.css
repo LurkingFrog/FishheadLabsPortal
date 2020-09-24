@@ -2,7 +2,7 @@
 @import url(https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,300,500,600,700&subset=latin,latin-ext);
 @import "jquery-ui.min.css";
 @import "bootstrap.min.css";
-@import "font-awesome.min.css";
+@import "fonts/font-awesome.min.css";
 @import "summernote.css";
 @import "codemirror/codemirror.css";
 @import "nv.d3.css";

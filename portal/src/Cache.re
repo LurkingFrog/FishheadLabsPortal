@@ -7,9 +7,7 @@
 
    */
 
-// Session specific data
-//
-// This manages items that control the session
+// Local Browser specific data
 module Local = {
   type t = {session: option(Session.t)};
 
@@ -18,7 +16,8 @@ module Local = {
 
 // Items that are synced with a remote server
 //
-//  This will eventually be replaced with the project Tyrell's WASM to automatically sync with other nodes
+// This will eventually be replaced with the project Tyrell's WASM to automatically sync with other nodes,
+// as well as hook in on change events.
 module Shared = {
   type t = {organizations: Belt.HashMap.String.t(Organization.t)};
   let default = () => {organizations: Belt.HashMap.String.make(~hintSize=10)};
@@ -32,7 +31,36 @@ type t = {
 
 let default = () => {local: Local.default(), shared: Shared.default()};
 
-/*
- Error: Unbound module Session
- Hint: Did you mean Session?
- */
+module Selectors = {
+  let state = state => state;
+  let session = state => state.local.session;
+};
+
+let reducer = (state: t, action) => {
+  Js.log("In the reducer with action");
+  Js.log(action);
+  switch (action) {
+  | Actions.Session(Create(session)) => {
+      ...state,
+      local: {
+        session: Some(session),
+      },
+    }
+  | Actions.Session(End) => {
+      ...state,
+      local: {
+        session: None,
+      },
+    }
+  };
+};
+
+// Turns this into a Reductive provider store
+include ReductiveContext.Make({
+  type action = Actions.t;
+  type state = t;
+});
+
+let logger = (store, next) => Middleware.logger(store) @@ next;
+
+let store = Reductive.Store.create(~reducer, ~preloadedState=default(), ~enhancer=logger, ());

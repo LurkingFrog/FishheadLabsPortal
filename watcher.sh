@@ -206,6 +206,7 @@ function init {
 
   # pg_init
   # restart_service server
+  $COMPOSE down
   restart_service portal
 
   mkdir -p $WORKDIR/pdfs
