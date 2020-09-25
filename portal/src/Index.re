@@ -1,30 +1,27 @@
 /* The entrypoint to the portal */
-[@bs.val] external document: Js.t({..}) = "document";
+open Webapi.Dom;
+
+let unwrap = (value: option('a)): 'a => Belt.Option.getExn(value);
+
+let body = document->Document.asHtmlDocument->unwrap->HtmlDocument.body->unwrap;
+let head = document->Document.asHtmlDocument->unwrap->HtmlDocument.head;
 
 let makeContainer = text => {
-  let container = document##createElement("div");
-  container##className #= "container";
+  let container = Document.createElement("div", document);
+  container->Element.setClassName("container");
+  container->Element.setId(text);
 
-  let title = document##createElement("div");
-  title##className #= "containerTitle";
-  title##innerText #= text;
-
-  let content = document##createElement("div");
-  content##className #= "containerContent";
-
-  let () = container##appendChild(content);
-  let () = document##body##appendChild(container);
-
-  content;
+  let () = container->Element.appendChild(body);
+  container;
 };
 
 // FIXME: This assumes that the full path is included, may not work for prod mode
 let linkCss = text => {
-  let css = document##createElement("link");
-  let () = css##setAttribute("rel", "stylesheet");
-  let () = css##setAttribute("type", "text/css");
-  let () = css##setAttribute("href", text);
-  let () = document##head##appendChild(css);
+  let css = Document.createElement("link", document);
+  let () = Element.setAttribute("rel", "stylesheet", css);
+  let () = Element.setAttribute("type", "text/css", css);
+  let () = Element.setAttribute("href", text, css);
+  let () = Element.appendChild(css, head);
   ();
 };
 
@@ -32,11 +29,21 @@ module App = {
   [@react.component]
   let make = () => {
     Js.log("Rendering App");
-    let session = Cache.useSelector(Cache.Selectors.session);
+    let _session = Cache.useSelector(Cache.Selectors.session);
+    let url = ReasonReactRouter.useUrl();
 
-    switch (session->Session.isLoggedIn) {
+    // switch (session->Session.isLoggedIn) {
+    switch (true) {
     | false => <LoginPage />
-    | true => <AtlantLayout />
+    | true =>
+      let body =
+        switch (url.path->List.nth_opt(0)->Belt.Option.getWithDefault("")->String.lowercase_ascii) {
+        | "/"
+        | ""
+        | "dashboard" => <div> "The Dashboard"->ReasonReact.string </div>
+        | path => <div> {("404 - Page not found. " ++ path)->ReasonReact.string} </div>
+        };
+      <AtlantLayout> body </AtlantLayout>;
     };
   };
 };
@@ -46,12 +53,6 @@ module Root = {
   let make = () => {
     let () = linkCss("./src/index.css");
     let () = linkCss("./src/assets/css/atlant-theme-default.css");
-
-    // Check Login
-
-    let url = ReasonReactRouter.useUrl();
-
-    Js.log(url);
 
     <div> <Cache.Provider store=Cache.store> <App /> </Cache.Provider> </div>;
   };

@@ -48,8 +48,6 @@ let make = () => {
 
   // Submit the validated form for authorization
   React.useEffect(() => {
-    Js.log("Using effect");
-    Js.log(formState);
     open Actions;
     switch (formState.status) {
     | Sending =>
