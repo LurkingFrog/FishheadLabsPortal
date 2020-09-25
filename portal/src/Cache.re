@@ -9,9 +9,12 @@
 
 // Local Browser specific data
 module Local = {
-  type t = {session: option(Session.t)};
+  type t = {
+    session: option(Session.t),
+    navigation: Navigation.t,
+  };
 
-  let default = () => {session: None};
+  let default = () => {session: None, navigation: Navigation.default()};
 };
 
 // Items that are synced with a remote server
@@ -34,22 +37,28 @@ let default = () => {local: Local.default(), shared: Shared.default()};
 module Selectors = {
   let state = state => state;
   let session = state => state.local.session;
+  let navigation = state => state.local.navigation;
 };
 
+type actions =
+  | Session(Session.action)
+  | Navigation(Navigation.action);
+
 let reducer = (state: t, action) => {
-  Js.log("In the reducer with action");
   Js.log(action);
   switch (action) {
-  | Actions.Session(Create(session)) => {
+  | Session(act) => {
       ...state,
       local: {
-        session: Some(session),
+        ...state.local,
+        session: Session.reducer(state.local.session, act),
       },
     }
-  | Actions.Session(End) => {
+  | Navigation(act) => {
       ...state,
       local: {
-        session: None,
+        ...state.local,
+        navigation: Navigation.reducer(state.local.navigation, act),
       },
     }
   };
@@ -57,7 +66,7 @@ let reducer = (state: t, action) => {
 
 // Turns this into a Reductive provider store
 include ReductiveContext.Make({
-  type action = Actions.t;
+  type action = actions;
   type state = t;
 });
 

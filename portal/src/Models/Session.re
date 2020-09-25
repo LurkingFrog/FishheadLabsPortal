@@ -13,3 +13,14 @@ let isLoggedIn = (session: option(t)) => {
   | Some(_session) => true
   };
 };
+
+type action =
+  | Create(t)
+  | End;
+
+let reducer = (_state: option(t), action) => {
+  switch (action) {
+  | Create(session) => Some(session)
+  | End => None
+  };
+};

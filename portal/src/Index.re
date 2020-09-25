@@ -8,7 +8,7 @@ let head = document->Document.asHtmlDocument->unwrap->HtmlDocument.head;
 
 let makeContainer = text => {
   let container = Document.createElement("div", document);
-  container->Element.setClassName("container");
+  container->Element.setClassName("RootContainer");
   container->Element.setId(text);
 
   let () = container->Element.appendChild(body);

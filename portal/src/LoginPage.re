@@ -48,7 +48,6 @@ let make = () => {
 
   // Submit the validated form for authorization
   React.useEffect(() => {
-    open Actions;
     switch (formState.status) {
     | Sending =>
       switch (LoginForm.sendAuth(formState)) {
