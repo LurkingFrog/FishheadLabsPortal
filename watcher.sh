@@ -302,25 +302,31 @@ while true; do
     else
       echo -en "No Match on '${FILE_PATH}'': Continuing\n"
     fi
+    print_logging
 
   elif isIn $PROJECT $CLIENT; then
     if [[ $FILE_PATH =~ ".?/package.json$" ]]; then
+      rm -f portal/.bsb.lock
       restart_service web_compiler
       restart_service web_portal
 
     elif [[ $FILE_PATH =~ ".?/bsconfig.json$" ]]; then
+      rm -f portal/.bsb.lock
       restart_service web_compiler
       restart_service web_portal
 
     # elif [[ $FILE_PATH =~ "^.?/.+.re$" ]]; then
-    #   # Doing nothing, as watch should handle this
+      # Doing nothing, as watch should handle this
+
     #   echo ""
 
     # elif [[ $FILE_PATH =~ "^.?/.+.html$" ]]; then
     #   # Doing nothing, as watch should handle this
     #   echo ""
+    elif [[ $FILE_PATH =~ "^.?/.+\.[rei?|resi?|html|css]$" ]]; then
+      print_logging
+      sleep 2
 
     fi
   fi
-  print_logging
 done

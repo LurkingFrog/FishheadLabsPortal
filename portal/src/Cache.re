@@ -22,8 +22,14 @@ module Local = {
 // This will eventually be replaced with the project Tyrell's WASM to automatically sync with other nodes,
 // as well as hook in on change events.
 module Shared = {
-  type t = {organizations: Belt.HashMap.String.t(Organization.t)};
-  let default = () => {organizations: Belt.HashMap.String.make(~hintSize=10)};
+  type t = {
+    configuration: Configuration.t,
+    organizations: Belt.HashMap.String.t(Organization.t),
+  };
+  let default = () => {
+    configuration: Configuration.default(),
+    organizations: Belt.HashMap.String.make(~hintSize=10),
+  };
 };
 
 // The full state of the system
@@ -36,6 +42,7 @@ let default = () => {local: Local.default(), shared: Shared.default()};
 
 module Selectors = {
   let state = state => state;
+  let config = state => state.shared.configuration;
   let session = state => state.local.session;
   let navigation = state => state.local.navigation;
 };

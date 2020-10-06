@@ -327,7 +327,7 @@ module PageTitle = {
 [@react.component]
 let make = (~children) => {
   let navigation = Cache.useSelector(Cache.Selectors.navigation);
-  let containerClass = navigation.showSidebar ? "page-container" : "page-navigation-toggled";
+  let _containerClass = navigation.showSidebar ? "page-container" : "page-navigation-toggled";
 
   <div className="page-container">
     <SideBar />

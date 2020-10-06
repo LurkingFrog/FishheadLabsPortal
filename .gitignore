@@ -21,6 +21,7 @@ npm-debug.log
 /portal/lib/bs
 /portal/bundleOutput/
 /portal/node_modules
+/portal/build
 *.exe
 *.obj
 *.out
@@ -48,8 +49,7 @@ lib/bs
 .merlin
 .bsb.lock
 
-watcher.out
-server.out
+
 
 # Other Projects
 /External

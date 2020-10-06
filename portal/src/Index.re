@@ -1,4 +1,7 @@
 /* The entrypoint to the portal */
+[%bs.raw {|require("./assets/css/index.css")|}];
+[%bs.raw {|require("./assets/css/atlant-theme-default.css")|}];
+
 open Webapi.Dom;
 
 let unwrap = (value: option('a)): 'a => Belt.Option.getExn(value);
@@ -16,6 +19,7 @@ let makeContainer = text => {
 };
 
 // FIXME: This assumes that the full path is included, may not work for prod mode
+// DEPRECATED: This was required because of using moduleserve.js. We can now use webpack
 let linkCss = text => {
   let css = Document.createElement("link", document);
   let () = Element.setAttribute("rel", "stylesheet", css);
@@ -40,7 +44,7 @@ module App = {
         switch (url.path->List.nth_opt(0)->Belt.Option.getWithDefault("")->String.lowercase_ascii) {
         | "/"
         | ""
-        | "dashboard" => <div> "The Dashboard"->ReasonReact.string </div>
+        | "dashboard" => <Dashboard />
         | path => <div> {("404 - Page not found. " ++ path)->ReasonReact.string} </div>
         };
       <AtlantLayout> body </AtlantLayout>;
@@ -51,9 +55,6 @@ module App = {
 module Root = {
   [@react.component]
   let make = () => {
-    let () = linkCss("./src/index.css");
-    let () = linkCss("./src/assets/css/atlant-theme-default.css");
-
     <div> <Cache.Provider store=Cache.store> <App /> </Cache.Provider> </div>;
   };
 };
