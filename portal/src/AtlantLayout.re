@@ -313,7 +313,11 @@ module HorizontalNavbar = {
 module Breadcrumbs = {
   [@react.component]
   let make = () => {
-    <div className="Breadcrumb"> "Placeholder for Breadcrumb"->ReasonReact.string </div>;
+    let navigation = Cache.useSelector(Cache.Selectors.navigation);
+    <ul className="breadcrumb">
+      <li> <div className="anchor"> "Home"->ReasonReact.string </div> </li>
+      <li className="active"> navigation.currentPage->ReasonReact.string </li>
+    </ul>;
   };
 };
 
@@ -334,8 +338,8 @@ let make = (~children) => {
     <div className="page-content">
       <HorizontalNavbar />
       <Breadcrumbs />
-      <PageTitle />
-      <div className="page-content-wrap"> <div> "I'm logged in"->ReasonReact.string </div> children </div>
+      // <PageTitle />
+      <div className="page-content-wrap"> children </div>
     </div>
   </div>;
 };

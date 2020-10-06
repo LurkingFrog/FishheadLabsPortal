@@ -85,6 +85,9 @@
   }
 }
 
+.anchor {
+  cursor: pointer
+}
 .form-material {
 }
 .form-material .form-group {

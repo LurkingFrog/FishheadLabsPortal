@@ -42,7 +42,7 @@ let default = () => {local: Local.default(), shared: Shared.default()};
 
 module Selectors = {
   let state = state => state;
-  let config = state => state.shared.configuration;
+  let configuration = state => state.shared.configuration;
   let session = state => state.local.session;
   let navigation = state => state.local.navigation;
 };

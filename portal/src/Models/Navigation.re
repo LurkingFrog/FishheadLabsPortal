@@ -7,7 +7,7 @@ type t = {
   showSidebar: bool,
 };
 
-let default = () => {currentPage: "", showSidebar: true};
+let default = () => {currentPage: "Dashboard", showSidebar: true};
 
 type action =
   | ChangePage(string);

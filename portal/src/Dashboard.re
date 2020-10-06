@@ -58,5 +58,6 @@ module TaskWidget = {
 
 [@react.component]
 let make = () => {
+  let conf = Cache.useSelector(Cache.Selectors.configuration);
   <div className="Dashboard"> "Placeholder for Dashboard - React"->ReasonReact.string </div>;
 };
