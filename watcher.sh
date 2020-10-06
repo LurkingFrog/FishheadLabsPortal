@@ -14,6 +14,7 @@ WORKDIR=~/Foundry/FishheadLabsPortal
 # An easier to read variable for calling docker compose. We'll set this programmatically
 COMPOSE_FILE=$WORKDIR/dev.docker-compose.yml
 COMPOSE=
+LOGS_PID=
 
 #RipGrep is used to parse files - easier to extract data from the compose files
 RG=
@@ -179,14 +180,18 @@ function restart_service() {
   echo -e "(Re)starting Service $1"
 
   # Cleanup ended all docker processes
-  $COMPOSE ps -a | grep Exit | cut -d ' ' -f 1 | xargs sudo docker rm
+  EXITED=$($COMPOSE ps -a | grep Exit | cut -d ' ' -f 1 )
+  if [[ $EXITED != "" ]]; then
+    xargs sudo docker rm $EXITED
+  fi
+
   COUNT=$($COMPOSE ps | grep "_$1_" | wc -l)
   if [ $COUNT = 1 ]; then
     $COMPOSE restart $1
   else
     $COMPOSE up -d --remove-orphans $1
   fi
-  $COMPOSE logs -f $1 &
+
   sleep 1
 }
 
@@ -198,6 +203,16 @@ function test_server() {
   sleep 2
 }
 
+function print_logging() {
+  echo -e "\n\n\n   ---->  Printing the logging";
+  if [[ $LOGS_PID != "" ]]; then
+    echo -e "We have a PID: $LOGS_PID"
+    kill $LOGS_PID
+  fi
+  $COMPOSE logs -f $1 &
+  LOGS_PID=$!
+}
+
 function init {
   echo -e "${SEP}Running initialization"
 
@@ -207,7 +222,12 @@ function init {
   # pg_init
   # restart_service server
   $COMPOSE down
-  restart_service portal
+
+  # This persists after the container dies, so we need to manually remove it
+  rm -f portal/.bsb.lock
+  restart_service web_compiler
+  restart_service web_portal
+  print_logging
 
   mkdir -p $WORKDIR/pdfs
 }
@@ -233,9 +253,9 @@ init
 while true; do
   command -v inotifywait > /dev/null 2>&1 || $(echo -e "InotifyWait not installed" && exit 1)
   EVENT=$(inotifywait -q -r --exclude target -e modify \
-    $INIT_DIR/watcher.sh \
-    $INIT_DIR/Cargo.toml \
-    $(for x in $ALL; do echo -e "$INIT_DIR/$x\n"; done) \
+    $WORKDIR/watcher.sh \
+    $WORKDIR/Cargo.toml \
+    $(for x in $ALL; do echo -e "$WORKDIR/$x\n"; done) \
   )
 
   FILE_PATH=${EVENT/${modify}/}
@@ -285,10 +305,12 @@ while true; do
 
   elif isIn $PROJECT $CLIENT; then
     if [[ $FILE_PATH =~ ".?/package.json$" ]]; then
-      restart_service portal
+      restart_service web_compiler
+      restart_service web_portal
 
     elif [[ $FILE_PATH =~ ".?/bsconfig.json$" ]]; then
-      restart_service portal
+      restart_service web_compiler
+      restart_service web_portal
 
     # elif [[ $FILE_PATH =~ "^.?/.+.re$" ]]; then
     #   # Doing nothing, as watch should handle this
@@ -300,5 +322,5 @@ while true; do
 
     fi
   fi
-
+  print_logging
 done

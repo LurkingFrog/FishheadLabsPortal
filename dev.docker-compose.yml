@@ -15,15 +15,11 @@ services:
     volumes:
       - "pg_data:/var/lib/postgresql/data"
 
-  portal:
-    user: $USER_ID
+  web_compiler:
+    build:
+      context: ./portal/scripts/
+      dockerfile: node.DOCKERFILE
     working_dir: /project/portal
-    # This will be prod
-    # image: mhart/alpine-node:latest
-    image: node:latest
-    ports:
-      - 9080:9080
-      - 9082:9082
     volumes:
       - "$HOME:$HOME"
       - ".:/project"
@@ -34,7 +30,31 @@ services:
       COLORTERM: truecolor
     tty: true
     stdin_open: true
-    command: ["bash", "run_dev_server.sh"]
+    command: ["bash", "-c", "npm i && npm run start"]
+
+  web_portal:
+    build:
+      context: ./portal/scripts/
+      dockerfile: node.DOCKERFILE
+    user: $USER_ID
+    depends_on:
+      - web_compiler
+    working_dir: /project/portal
+    # This will be prod
+    # image: mhart/alpine-node:latest
+    ports:
+      - 9080:9080
+    volumes:
+      - "$HOME:$HOME"
+      - ".:/project"
+      - "/etc/passwd:/etc/passwd"
+    environment:
+      DEBUG_COLORS: "true"
+      TERM: xterm-256color
+      COLORTERM: truecolor
+    tty: true
+    stdin_open: true
+    command: ["npm", "run", "server"]
 
   server:
     user: $USER_ID

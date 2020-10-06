@@ -17,7 +17,12 @@
   "bs-dependencies": [
     "bs-webapi",
     "reason-react",
-    "reductive"
+    "reductive",
+    "bs-reform",
+    "reschema"
   ],
-  "refmt": 3
+  "refmt": 3,
+  "ppx-flags": [
+    "lenses-ppx/ppx"
+  ]
 }
