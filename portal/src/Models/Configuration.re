@@ -17,16 +17,16 @@ module Widget = {
 };
 
 module Dashboard = {
-  type t = {widgets: list(Widget.t)};
+  type t = {widgets: array(Widget.t)};
 };
 
 type t = {dashboard: Dashboard.t};
 let default = () => {
   dashboard: {
-    widgets: [
+    widgets: [|
       {widgetType: Widget.Database, key: Uuid.make()},
       {widgetType: Widget.Task, key: Uuid.make()},
-    ],
+    |],
   },
 };
 
@@ -40,13 +40,17 @@ let reducer = (state: t, action) => {
   switch (action) {
   | AddDashboardWidget(widget) => {
       dashboard: {
-        widgets: List.append(state.dashboard.widgets, [widget]),
+        widgets: Array.append(state.dashboard.widgets, [|widget|]),
       },
     }
   // | MoveWidget:
   | RemoveDashboardWidget(key) => {
       dashboard: {
-        widgets: List.filter((widget: Widget.t) => key != widget.key, state.dashboard.widgets),
+        widgets:
+          state.dashboard.widgets
+          |> Array.to_list
+          |> List.filter((widget: Widget.t) => key != widget.key)
+          |> Array.of_list,
       },
     }
   };

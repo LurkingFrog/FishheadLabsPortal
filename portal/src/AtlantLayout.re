@@ -111,7 +111,8 @@ module SideBar = {
       newConfig("Activity", ~icon="fa-tasks", ~link="/activity"),
     |];
     let menuItems =
-      Array.map(config => <MenuItem config prefix="SideBar" />, menuConfig)->ReasonReact.array;
+      Array.map(config => <MenuItem config prefix="SideBar" key={Uuid.make()} />, menuConfig)
+      ->ReasonReact.array;
 
     <div className="page-sidebar">
       <ul className="x-navigation">

@@ -14,8 +14,8 @@ type action =
 
 let reducer = (state: t, action) => {
   switch (action) {
-  | ChangePage(newPage) =>
-    ReasonReactRouter.push(newPage)->ignore;
-    {...state, currentPage: newPage};
+  | ChangePage(newPath) =>
+    ReasonReactRouter.push(newPath)->ignore;
+    {...state, currentPage: newPath};
   };
 };

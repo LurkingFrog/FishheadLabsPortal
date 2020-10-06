@@ -1,5 +1,4 @@
 /* The entrypoint to the portal */
-[%bs.raw {|require("./assets/css/index.css")|}];
 [%bs.raw {|require("./assets/css/atlant-theme-default.css")|}];
 
 open Webapi.Dom;
