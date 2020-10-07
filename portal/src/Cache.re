@@ -51,6 +51,7 @@ type actions =
   | Session(Session.action)
   | Navigation(Navigation.action);
 
+/** TODO: Add a root level Result to catch and alert the user to any errors from trying to run the reducer */
 let reducer = (state: t, action) => {
   Js.log(action);
   switch (action) {

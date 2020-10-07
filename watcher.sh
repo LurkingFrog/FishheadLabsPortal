@@ -209,7 +209,7 @@ function print_logging() {
     echo -e "We have a PID: $LOGS_PID"
     kill $LOGS_PID
   fi
-  $COMPOSE logs -f $1 &
+  $COMPOSE logs -f web_compiler &
   LOGS_PID=$!
 }
 
@@ -223,8 +223,11 @@ function init {
   # restart_service server
   $COMPOSE down
 
-  # This persists after the container dies, so we need to manually remove it
+  # Clean up some holdovers
+  sudo chown -R ${USER}:${USER} $WORKDIR
+  cd ./portal && npm run clean && cd ..
   rm -f portal/.bsb.lock
+
   restart_service web_compiler
   restart_service web_portal
   print_logging

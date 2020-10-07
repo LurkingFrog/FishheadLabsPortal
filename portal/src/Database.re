@@ -11,3 +11,10 @@ module ImportGoogleSheet = {
     <div className="ImportGoogleSheet"> "Placeholder for ImportGoogleSheet"->ReasonReact.string </div>;
   };
 };
+
+module ExportGoogleSheet = {
+  [@react.component]
+  let make = () => {
+    <div className="ExportGoogleSheet"> "Placeholder for ExportGoogleSheet"->ReasonReact.string </div>;
+  };
+};

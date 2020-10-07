@@ -35,56 +35,42 @@ module Profile = {
 };
 
 module SideBar = {
-  let onClick = (id, link, event) => {
-    event->ReactEvent.Synthetic.preventDefault;
-    open Webapi.Dom;
-
-    // Js.log(clicked##className);
-    let elem = id->Document.getElementById(document)->Belt.Option.getExn;
-    let toggle = DomTokenList.toggle("active", elem->Element.classList);
-    // TODO: make the rest inactive
-    toggle ? Js.log("Clicked on the active list") : Js.log("This one is inactive");
-
-    // Change to the new page, if there is one
-    link->Belt.Option.map(ReasonReactRouter.push)->ignore;
-  };
-
-  type itemConfig = {
-    name: string,
-    className: string,
-    icon: option(string),
-    children: array(itemConfig),
-    link: option(string),
-  };
-
-  let newConfig = (~className="", ~icon=?, ~children=[||], ~link=?, name) => {
-    {name, className, icon, children, link};
-  };
-
   module MenuItem = {
-    let rec buildItem = (config, prefix) => {
-      let key = prefix ++ "__" ++ config.name->Js.String2.replace(" ", "_");
+    let rec buildItem = (item: Navigation.MenuItem.t, dispatch) => {
+      let onClick = _evt => dispatch(Cache.Navigation(MenuItemClick(item.key)));
       let className =
-        config.children->Array.length > 0 ? "xn-openable " ++ config.className : config.className;
+        item.className
+        ++ {
+          item.children->Array.length > 0 ? " xn-openable" : "";
+        }
+        ++ {
+          item.isOpen ? " active" : "";
+        };
       let icon =
-        config.icon
+        item.iconClass
         ->Belt.Option.mapWithDefault(ReasonReact.null, icon => <span className={"fa " ++ icon} />);
-      let children =
-        config.children->Array.length == 0
-          ? ReasonReact.null
-          : <ul> {Array.map(child => buildItem(child, key), config.children)->ReasonReact.array} </ul>;
 
-      <li className key id=key>
-        <div className="anchor" onClick={onClick(key, config.link)} id=key>
+      let children =
+        item.children->Array.length == 0
+          ? ReasonReact.null
+          : <ul>
+              {item.children |> Array.map(child => buildItem(child, dispatch)) |> ReasonReact.array}
+            </ul>;
+
+      <li className key={item.key} id={item.key}>
+        <div className="anchor" onClick id={item.key}>
           icon
-          <span className="xn-text"> config.name->ReasonReact.string </span>
+          <span className="xn-text"> item.name->ReasonReact.string </span>
         </div>
         children
       </li>;
     };
 
     [@react.component]
-    let make = (~config, ~prefix="") => buildItem(config, prefix);
+    let make = (~item) => {
+      let dispatch = Cache.useDispatch();
+      buildItem(item, dispatch);
+    };
   };
 
   module Title = {
@@ -96,26 +82,18 @@ module SideBar = {
   };
 
   [@react.component]
-  let make = () => {
-    let menuConfig = [|
-      newConfig("Dashboard", ~icon="fa-dashboard", ~link="/dashboard"),
-      newConfig(
-        "Database",
-        ~icon="fa-database",
-        ~children=[|
-          newConfig("Import", ~icon="fa-import", ~link="/database/import"),
-          newConfig("Export", ~icon="fa-export", ~link="/database/export"),
-        |],
-        ~link="/database",
-      ),
-      newConfig("Activity", ~icon="fa-tasks", ~link="/activity"),
-    |];
+  let make = (~navigation: Navigation.t) => {
     let menuItems =
-      Array.map(config => <MenuItem config prefix="SideBar" key={Uuid.make()} />, menuConfig)
-      ->ReasonReact.array;
+      navigation.menuItems |> Array.map(item => <MenuItem item key={Uuid.make()} />) |> ReasonReact.array;
 
-    <div className="page-sidebar">
-      <ul className="x-navigation">
+    // Change the styles based on the state
+    let display_class =
+      "page-sidebar page-sidebar-fixed scroll mCustomScrollbar _mCS_1 mCS-autoHide mCS_no_scrollbar "
+      ++ (navigation.showSidebar ? "" : "mCS_disabled");
+    let ul_class = navigation.showSidebar ? "x-navigation" : "x-navigation x-navigation-minimized";
+
+    <div className=display_class>
+      <ul className=ul_class>
         <Logo id="SideBar__Logo" />
         <Profile id="SideBar__Profile" />
         <Title text="Navigation" prefix="SideBar" />
@@ -126,16 +104,18 @@ module SideBar = {
 };
 
 module HorizontalNavbar = {
-  let toggleSidebar = _event => {
-    Js.log("Clicked the toggle sidebar");
-  };
-
   [@react.component]
-  let make = () => {
+  let make = (~navigation: Navigation.t) => {
+    let sidebar_display_icon = navigation.showSidebar ? "fa fa-dedent" : "fa fa-indent";
+    let dispatch = Cache.useDispatch();
+    let toggleSidebar = _event => {
+      dispatch(Cache.Navigation(ToggleSidebar));
+    };
+
     <ul className="x-navigation x-navigation-horizontal x-navigation-panel">
       <li className="xn-icon-button">
-        <div onClick={_evt => Js.log("#")} className="anchor x-navigation-minimize">
-          <span className="fa fa-dedent" />
+        <div onClick=toggleSidebar className="anchor x-navigation-minimize">
+          <span className=sidebar_display_icon />
         </div>
       </li>
       <li className="xn-search">
@@ -313,8 +293,7 @@ module HorizontalNavbar = {
 
 module Breadcrumbs = {
   [@react.component]
-  let make = () => {
-    let navigation = Cache.useSelector(Cache.Selectors.navigation);
+  let make = (~navigation: Navigation.t) => {
     <ul className="breadcrumb">
       <li> <div className="anchor"> "Home"->ReasonReact.string </div> </li>
       <li className="active"> navigation.currentPage->ReasonReact.string </li>
@@ -334,11 +313,13 @@ let make = (~children) => {
   let navigation = Cache.useSelector(Cache.Selectors.navigation);
   let _containerClass = navigation.showSidebar ? "page-container" : "page-navigation-toggled";
 
-  <div className="page-container">
-    <SideBar />
+  let container_class =
+    navigation.showSidebar ? "page-container" : "page-container page-navigation-toggled page-container-wide";
+  <div className=container_class>
+    <SideBar navigation />
     <div className="page-content">
-      <HorizontalNavbar />
-      <Breadcrumbs />
+      <HorizontalNavbar navigation />
+      <Breadcrumbs navigation />
       // <PageTitle />
       <div className="page-content-wrap"> children </div>
     </div>
