@@ -19,10 +19,10 @@ services:
     build:
       context: ./portal/scripts/
       dockerfile: node.DOCKERFILE
-    working_dir: /project/portal
+    working_dir: $WORKDIR/portal
     volumes:
+      - $WORKDIR:$WORKDIR
       - "$HOME:$HOME"
-      - ".:/project"
       - "/etc/passwd:/etc/passwd"
     environment:
       DEBUG_COLORS: "true"
@@ -37,16 +37,16 @@ services:
       context: ./portal/scripts/
       dockerfile: node.DOCKERFILE
     user: $USER_ID
-    depends_on:
-      - web_compiler
-    working_dir: /project/portal
+    #    depends_on:
+    #      - web_compiler
+    working_dir: $WORKDIR/portal
     # This will be prod
     # image: mhart/alpine-node:latest
     ports:
       - 9080:9080
     volumes:
+      - $WORKDIR:$WORKDIR
       - "$HOME:$HOME"
-      - ".:/project"
       - "/etc/passwd:/etc/passwd"
     environment:
       DEBUG_COLORS: "true"

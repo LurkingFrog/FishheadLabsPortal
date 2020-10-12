@@ -31,7 +31,6 @@ let linkCss = text => {
 module App = {
   [@react.component]
   let make = () => {
-    Js.log("Rendering App");
     let _session = Cache.useSelector(Cache.Selectors.session);
     let url = ReasonReactRouter.useUrl();
 
@@ -44,6 +43,7 @@ module App = {
         | "/"
         | ""
         | "dashboard" => <Dashboard />
+        | "database" => <DatabasePage />
         | path => <div> {("404 - Page not found. " ++ path)->ReasonReact.string} </div>
         };
       <AtlantLayout> body </AtlantLayout>;

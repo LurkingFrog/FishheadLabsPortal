@@ -27,21 +27,16 @@ module LoginForm = {
   let onFocus = event => ReactEvent.Focus.target(event)##select();
 
   let submit = setState => {
-    Js.log("Clicked the submit");
     setState(formState => {{...formState, status: Sending}});
   };
 
   let sendAuth = _formState => {
-    Js.log("Sending the auth (but not really)");
-
     Ok("I'm the fake token");
   };
 };
 
 [@react.component]
 let make = () => {
-  Js.log("Rendering the Login Page");
-
   // let (localState, )
   let (formState, setFormState) = React.useState(() => LoginForm.default());
   let dispatch = Cache.useDispatch();

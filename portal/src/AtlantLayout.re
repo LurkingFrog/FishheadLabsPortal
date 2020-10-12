@@ -1,3 +1,6 @@
+/** The default single page app layout */
+open Helpers;
+
 module Logo = {
   [@react.component]
   let make = (~id) => {
@@ -37,7 +40,13 @@ module Profile = {
 module SideBar = {
   module MenuItem = {
     let rec buildItem = (item: Navigation.MenuItem.t, dispatch) => {
-      let onClick = _evt => dispatch(Cache.Navigation(MenuItemClick(item.key)));
+      let onClick = event => {
+        // Js.log("OnClick");
+        // Js.log(ReactEvent.Mouse.currentTarget(event));
+
+        event->ReactEvent.Synthetic.stopPropagation;
+        dispatch(Cache.Navigation(MenuItemClick(item.key)));
+      };
       let className =
         item.className
         ++ {
@@ -57,8 +66,8 @@ module SideBar = {
               {item.children |> Array.map(child => buildItem(child, dispatch)) |> ReasonReact.array}
             </ul>;
 
-      <li className key={item.key} id={item.key}>
-        <div className="anchor" onClick id={item.key}>
+      <li className key={item.key} id={item.key} onClick>
+        <div className="anchor" id={item.key} onClick>
           icon
           <span className="xn-text"> item.name->ReasonReact.string </span>
         </div>
@@ -84,13 +93,36 @@ module SideBar = {
   [@react.component]
   let make = (~navigation: Navigation.t) => {
     let menuItems =
-      navigation.menuItems |> Array.map(item => <MenuItem item key={Uuid.make()} />) |> ReasonReact.array;
+      navigation.sidebar.root
+      |> HM.find(navigation.sidebar.lookup)
+      |> kC((root: Navigation.MenuItem.t) => {
+           Js.log("Rendering Children");
+           Js.log(root);
+           ok(
+             root.children
+             |> Array.map((item: Navigation.MenuItem.t) => <MenuItem item key={item.key} />)
+             |> ReasonReact.array,
+           );
+         })
+      |> getExn;
 
     // Change the styles based on the state
     let display_class =
       "page-sidebar page-sidebar-fixed scroll mCustomScrollbar _mCS_1 mCS-autoHide mCS_no_scrollbar "
-      ++ (navigation.showSidebar ? "" : "mCS_disabled");
-    let ul_class = navigation.showSidebar ? "x-navigation" : "x-navigation x-navigation-minimized";
+      ++ (
+        switch (navigation.sidebar.display) {
+        | Full => ""
+        | Hidden
+        | Minimized => "mCS_disabled"
+        }
+      );
+
+    let ul_class =
+      switch (navigation.sidebar.display) {
+      | Full => "x-navigation"
+      | Hidden
+      | Minimized => "x-navigation x-navigation-minimized"
+      };
 
     <div className=display_class>
       <ul className=ul_class>
@@ -106,7 +138,12 @@ module SideBar = {
 module HorizontalNavbar = {
   [@react.component]
   let make = (~navigation: Navigation.t) => {
-    let sidebar_display_icon = navigation.showSidebar ? "fa fa-dedent" : "fa fa-indent";
+    let sidebar_display_icon =
+      switch (navigation.sidebar.display) {
+      | Full => "fa fa-dedent"
+      | Hidden
+      | Minimized => "fa fa-indent"
+      };
     let dispatch = Cache.useDispatch();
     let toggleSidebar = _event => {
       dispatch(Cache.Navigation(ToggleSidebar));
@@ -311,11 +348,15 @@ module PageTitle = {
 [@react.component]
 let make = (~children) => {
   let navigation = Cache.useSelector(Cache.Selectors.navigation);
-  let _containerClass = navigation.showSidebar ? "page-container" : "page-navigation-toggled";
 
-  let container_class =
-    navigation.showSidebar ? "page-container" : "page-container page-navigation-toggled page-container-wide";
-  <div className=container_class>
+  let containerClass =
+    switch (navigation.sidebar.display) {
+    | Full => "page-container"
+    | Hidden
+    | Minimized => "page-container page-navigation-toggled page-container-wide"
+    };
+
+  <div className=containerClass>
     <SideBar navigation />
     <div className="page-content">
       <HorizontalNavbar navigation />

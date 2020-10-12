@@ -7,7 +7,6 @@ type t = {
 };
 
 let isLoggedIn = (session: option(t)) => {
-  Js.log("Checking auth");
   switch (session) {
   | None => false
   | Some(_session) => true

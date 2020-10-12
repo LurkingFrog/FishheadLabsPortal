@@ -8,8 +8,9 @@ export USER_ID=$(id -u):$(id -g)
 # export RUSTFLAGS="-Z macro-backtrace -Z debug-macros"
 
 
-# WORKDIR=~/Foundry/Protean/protean_examples/diesel_updates
-WORKDIR=~/Foundry/FishheadLabsPortal
+# This is the root of the project. It gets mounted wholesale in the development docker environment
+export WORKDIR=/home/dfogelson/Foundry/FishheadLabsPortal
+
 
 # An easier to read variable for calling docker compose. We'll set this programmatically
 COMPOSE_FILE=$WORKDIR/dev.docker-compose.yml

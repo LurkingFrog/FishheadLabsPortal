@@ -12,6 +12,7 @@ module Local = {
   type t = {
     session: option(Session.t),
     navigation: Navigation.t,
+    // alerts: Alert.t,
   };
 
   let default = () => {session: None, navigation: Navigation.default()};
@@ -53,7 +54,6 @@ type actions =
 
 /** TODO: Add a root level Result to catch and alert the user to any errors from trying to run the reducer */
 let reducer = (state: t, action) => {
-  Js.log(action);
   switch (action) {
   | Session(act) => {
       ...state,

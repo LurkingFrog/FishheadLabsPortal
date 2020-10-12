@@ -18,3 +18,8 @@ module ExportGoogleSheet = {
     <div className="ExportGoogleSheet"> "Placeholder for ExportGoogleSheet"->ReasonReact.string </div>;
   };
 };
+
+[@react.component]
+let make = () => {
+  <div className="Database"> "Placeholder for Database root page"->ReasonReact.string </div>;
+};
