@@ -109,8 +109,7 @@ module Menu = {
              )
              |> kC((parent: MenuItem.t) => {
                   let index =
-                    parent.children
-                    ->Belt.Array.getIndexBy(item => item.parent |> Belt.Option.getExn == parent.key)
+                    parent.children->Belt.Array.getIndexBy(child => child.key == item.key)
                     |> Belt.Option.getExn;
                   Belt.Array.set(parent.children, index, item) |> ignore;
                   Belt.HashMap.String.set(menu.lookup, parent.key, parent);
@@ -187,7 +186,7 @@ let default = () => {
     |]
     |> Menu.addMenuItems(Menu.default())
     |> getExn;
-  {currentPage: "Dashboard", sidebar};
+  {currentPage: "/", sidebar};
 };
 
 type action =
@@ -218,6 +217,18 @@ let reducer = (state: t, action) => {
     let sidebar =
       Menu.updateMenuItem(state.sidebar, key, item => ok({...item, isOpen: item.isOpen ? false : true}))
       |> getExn;
-    {...state, sidebar};
+    let currentPage =
+      key
+      |> HM.find(sidebar.lookup)
+      |> kC((item: MenuItem.t) =>
+           switch (item.uri) {
+           | Some(path) =>
+             ReasonReactRouter.push(path);
+             ok(path);
+           | None => ok(state.currentPage)
+           }
+         )
+      |> getExn;
+    {currentPage, sidebar};
   };
 };
