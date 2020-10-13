@@ -44,7 +44,7 @@ module App = {
         | ""
         | "dashboard" => <Dashboard />
         | "database" => <DatabasePage />
-        | path => <div> {("404 - Page not found. " ++ path)->ReasonReact.string} </div>
+        | path => <PageNotFound msg={"There is no page called '" ++ path ++ "'"} />
         };
       <AtlantLayout> body </AtlantLayout>;
     };

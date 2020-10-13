@@ -121,11 +121,11 @@ module DatabaseWidget = {
   [@react.component]
   let make = () => {
     <Widget definition>
-      <div className="widget-item-left"> <span className="fa fa-envelope" /> </div>
+      <div className="widget-item-left"> <span className="fa fa-database" /> </div>
       <div className="widget-data">
         <div className="widget-int num-count"> "Database Stuff"->ReasonReact.string </div>
-        <div className="widget-title"> "New messages"->ReasonReact.string </div>
-        <div className="widget-subtitle"> "In your mailbox"->ReasonReact.string </div>
+        <div className="widget-title"> "Last Backup?"->ReasonReact.string </div>
+        <div className="widget-subtitle"> "Records?"->ReasonReact.string </div>
       </div>
     </Widget>;
   };
@@ -137,11 +137,11 @@ module TaskWidget = {
   [@react.component]
   let make = () => {
     <Widget definition>
-      <div className="widget-item-left"> <span className="fa fa-envelope" /> </div>
+      <div className="widget-item-left"> <span className="fa fa-tasks" /> </div>
       <div className="widget-data">
         <div className="widget-int num-count"> "Task Stuff"->ReasonReact.string </div>
-        <div className="widget-title"> "New messages"->ReasonReact.string </div>
-        <div className="widget-subtitle"> "In your mailbox"->ReasonReact.string </div>
+        <div className="widget-title"> "Running Tasks"->ReasonReact.string </div>
+        <div className="widget-subtitle"> "Finished Tasks"->ReasonReact.string </div>
       </div>
     </Widget>;
   };

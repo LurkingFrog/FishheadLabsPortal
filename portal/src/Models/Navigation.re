@@ -57,7 +57,7 @@ module MenuItem = {
     Belt.Array.getBy(item.children, x => x.key == child.key)
     |> mapSome(
          ~msg=Printf.sprintf("MenuItem key '%s' alread has a child '%s'", item.key, child.key),
-         DuplicateKey,
+         Duplicate,
        )
     |> kC(() => {
          let children = {...child, parent: Some(item.key)} |> insert(~position, item.children) |> getExn;

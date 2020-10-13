@@ -74,6 +74,27 @@ module HM = {
        );
   };
 
+  /** Uniquely insert a new item with key and raise a duplicate key error if it already exists */
+  let insert = (~dupError=None, key, item, hashMap) => {
+    Belt.HashMap.String.get(hashMap, key)
+    |> mapSome(
+         ~msg=
+           dupError->Belt.Option.getWithDefault(
+             sprintf("Item with key '%s' already exists in the hash map", key),
+           ),
+         ~level=
+           switch (dupError) {
+           | Some(_) => Err
+           | None => Panic
+           },
+         NotFound,
+       )
+    |> kC(() => {
+         Belt.HashMap.String.set(hashMap, key, item);
+         ok(hashMap);
+       });
+  };
+
   /** Update a HashMap item in place */
   let update = (~notFound=None, hashMap, key, func) => {
     find(~notFound, hashMap, key)
@@ -94,4 +115,12 @@ let last = arr => {
   - 1
   |> Belt.Array.get(arr)
   |> mapNone(~msg="Cannot get the last item of an empty array", OutOfRange);
+};
+
+/** Add back button functionality since it doesn't seem to be in the router
+ *
+*/
+
+let back = () => {
+  Webapi.Dom.(History.(back(history)));
 };
