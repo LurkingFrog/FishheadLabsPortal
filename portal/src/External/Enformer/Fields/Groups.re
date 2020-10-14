@@ -6,6 +6,6 @@
 
 type groupType =
   | Validation
-  | PartialForm;
+  | SubForm;
 
 type t = {groupType};

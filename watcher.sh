@@ -196,6 +196,45 @@ function restart_service() {
   sleep 1
 }
 
+
+# Run the web portal locally. Mounting and running in docker seems to cause a conflict with VS Code, so
+# doing it manually for now
+function restart_portal() {
+  echo -e "(Re)starting  Web Portal"
+  cd $WORKDIR/portal
+
+  if [[ $PORTAL_SERVER_PID != "" ]]; then
+    echo -e "Killing the portal server with pid ${PORTAL_SERVER_PID}"
+    kill ${PORTAL_SERVER_PID}
+  fi
+
+  if [[ $PORTAL_COMPILER_PID != "" ]]; then
+    echo -e "Killing the portal compiler with pid ${PORTAL_COMPILER_PID}"
+    kill ${PORTAL_COMPILER_PID}
+  fi
+
+  # Kill anything that looks like it was running from this directory
+  for x in $(ps aux | grep $WORKDIR | head -n-1 | sed -E "s|^(\w+)\+\s+([0-9]+).+\$|\2|"); do \
+    echo -e "Killing pid $x"; \
+    kill $x; \
+  done
+
+  rm -f .bsb.lock
+  npm run clean
+  npm run build
+
+  if [ $? -ne 0 ]; then
+    echo -e "Got a compiler error on the portal. Not starting the server"
+  else
+    npm run start &
+    PORTAL_COMPILER_PID=$!
+
+    npm run server &
+    PORTAL_SERVER_PID=$!
+  fi
+  cd $WORKDIR
+}
+
 function test_server() {
   echo -e "${SEP}Running Test on server"
   $COMPOSE ps -a | grep Exit | cut -d ' ' -f 1 | xargs sudo docker rm
@@ -226,11 +265,13 @@ function init {
 
   # Clean up some holdovers
   sudo chown -R ${USER}:${USER} $WORKDIR
-  cd ./portal && npm run clean && cd ..
-  rm -f portal/.bsb.lock
+  cd ./portal
+  npm run clean
+  npm i
+  cd ..
 
-  restart_service web_compiler
-  restart_service web_portal
+
+  restart_portal
   print_logging
 
   mkdir -p $WORKDIR/pdfs
@@ -310,15 +351,15 @@ while true; do
 
   elif isIn $PROJECT $CLIENT; then
     if [[ $FILE_PATH =~ ".?/package.json$" ]]; then
-      rm -f portal/.bsb.lock
-      restart_service web_compiler
-      restart_service web_portal
+      cd $WORKDIR/portal
+      npm i
+      restart_portal
 
     elif [[ $FILE_PATH =~ ".?/bsconfig.json$" ]]; then
-      rm -f portal/.bsb.lock
-      restart_service web_compiler
-      restart_service web_portal
+      restart_portal
 
+    elif [[ $FILE_PATH =~ ".?/webpack.config.js$" ]]; then
+      restart_portal
     # elif [[ $FILE_PATH =~ "^.?/.+.re$" ]]; then
       # Doing nothing, as watch should handle this
 
@@ -327,10 +368,12 @@ while true; do
     # elif [[ $FILE_PATH =~ "^.?/.+.html$" ]]; then
     #   # Doing nothing, as watch should handle this
     #   echo ""
-    elif [[ $FILE_PATH =~ "^.?/.+\.[rei?|resi?|html|css]$" ]]; then
-      print_logging
-      sleep 2
+    # elif [[ $FILE_PATH =~ "^.?/.+\.[rei?|resi?|html|css]$" ]]; then
+    # print_logging
+    # sleep 2
 
     fi
   fi
+  # Changes don't need to be that fast, so give it a break in between
+  sleep 2
 done

@@ -363,7 +363,9 @@ let make = (~children) => {
       <HorizontalNavbar navigation />
       <Breadcrumbs navigation />
       // <PageTitle />
-      <div className="page-content-wrap"> children </div>
+      <div className="page-content-wrap">
+        <div className="row"> <div className="col-md-12"> children </div> </div>
+      </div>
     </div>
   </div>;
 };
