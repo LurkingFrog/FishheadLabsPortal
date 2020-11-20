@@ -16,9 +16,12 @@ module.exports = {
     publicPath: ASSET_PATH,
     filename: "Index.js",
   },
+  resolve: {
+    symlinks: false,
+  },
   plugins: [
     new HtmlWebpackPlugin({
-      template: "src/index.html",
+      template: "./src/index.html",
       inject: false,
     }),
     new ExtractCssChunks(),

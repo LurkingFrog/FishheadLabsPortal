@@ -7,9 +7,12 @@ export RUST_LOG=warn,test=debug,cache=debug,client=debug,server=debug;
 export USER_ID=$(id -u):$(id -g)
 # export RUSTFLAGS="-Z macro-backtrace -Z debug-macros"
 
+# This is the root of all my code projects. This allows me to make symbolic links (which don't work within docker)
+export CODE_ROOT=/home/dfogelson/Foundry
 
 # This is the root of the project. It gets mounted wholesale in the development docker environment
-export WORKDIR=/home/dfogelson/Foundry/FishheadLabsPortal
+export WORKDIR=$CODE_ROOT/FishheadLabsPortal
+
 
 
 # An easier to read variable for calling docker compose. We'll set this programmatically
@@ -27,9 +30,12 @@ PG_PASS=
 
 
 # Some project groupings. These are used so I can figure out the correct containers to manage
-ALL=('cache' 'postgres' 'google_sheets' 'client' 'portal' 'server' 'External/Gappi/' 'External/Wrapi' 'External/Subpar')
-SERVER="cache postgres server sheets External"
-CLIENT="cache client portal"
+EXTERNAL_DIR=External
+EXTERNAL=('Gappi' 'Subpar' 'Wrapi' 'Eeyore' 'Enform')
+ALL=('cache' 'postgres' 'google_sheets' 'client' 'portal' 'server')
+for x in $EXTERNAL; do ALL+="$EXTERNAL_DIR/$x"; done
+SERVER="cache postgres server sheets External/Wrapi External/Subpar External/Gappi "
+CLIENT="cache client portal External/Eeyore External/Enform "
 
 
 # If Diesel is missing on ubuntu:
@@ -174,7 +180,9 @@ function tearDown {
 }
 
 # See if a term is contained in a list
-function isIn() [[ "$2" =~ "\b$1\b" ]]
+function isIn() {
+  [[ "$2" =~ "\b$1\b" ]]
+}
 
 
 function restart_service() {
@@ -200,7 +208,7 @@ function restart_service() {
 # Run the web portal locally. Mounting and running in docker seems to cause a conflict with VS Code, so
 # doing it manually for now
 function restart_portal() {
-  echo -e "(Re)starting  Web Portal"
+  echo -e "\n\n--->(Re)starting  Web Portal"
   cd $WORKDIR/portal
 
   if [[ $PORTAL_SERVER_PID != "" ]]; then
@@ -220,7 +228,16 @@ function restart_portal() {
   done
 
   rm -f .bsb.lock
+  npm link eeyo.re enform
   npm run clean
+
+  # This prebuild hopefully fixes the enform-tailwind error:
+  #   tailwind.css file not found in project hierarchy. You may need to manually set the path to the file with the -path argument.
+  [ ! -e "src/assets/css/tailwind.css" ] && \
+    ./node_modules/.bin/tailwindcss build src/assets/css/atlant-theme-default.css -o src/assets/css/tailwind.css
+  [ ! -e "node_modules/enform/src/assets/css/tailwind.css" ] && \
+    cp src/assets/css/tailwind.css node_modules/enform/src/assets/css/tailwind.css
+
   npm run build
 
   if [ $? -ne 0 ]; then
@@ -233,6 +250,62 @@ function restart_portal() {
     PORTAL_SERVER_PID=$!
   fi
   cd $WORKDIR
+}
+
+function recompile_portal() {
+  RESULT=Initialized
+  if [[ $1 =~ "$EXTERNAL_DIR/Eeyore" ]]; then
+    echo -e "Running Eeyore Build"
+    cd $WORKDIR/$EXTERNAL_DIR/Eeyore
+    npm run build || return $?
+    RESULT="Ok"
+  fi
+
+  if [[ $RESULT == "Ok" ]] || [[ $1 =~ "$EXTERNAL_DIR/Enform" ]]; then
+    echo -e "Running Enform Build"
+    cd $WORKDIR/$EXTERNAL_DIR/Enform
+    npm run build || return $?
+    RESULT="Ok"
+  fi
+
+  if [[ $PORTAL_SERVER_PID == "" ]]; then
+    echo -e "Portal Server is currently stopped running - attempting to restart the portal"
+    restart_portal
+  else
+    echo -e "Portal Server is running"
+    touch $WORKDIR/portal/src/Index.re
+  fi
+
+}
+
+function init_portal() {
+  echo -e "Setting up the portal"
+
+  # Create a symbolic link for each external project
+  # And add in the npm link
+  cd $WORKDIR/$EXTERNAL_DIR
+
+  [ ! -d "Eeyore" ] && ln -s $CODE_ROOT/Eeyo/packages/eeyo ./Eeyore
+  cd Eeyore
+  rm -rf lib
+  npm run clean
+  npm link
+  cd ..
+
+  [ ! -d "Enform" ] && ln -s $CODE_ROOT/Enform/packages/enform ./Enform
+  cd Enform
+  npm link
+  npm link eeyo.re
+  rm -rf lib
+  npm run clean
+  cd ..
+
+  cd $WORKDIR/portal
+  rm -rf lib
+  npm link eeyo.re enform
+  npm run clean
+  npm i
+  cd ..
 }
 
 function test_server() {
@@ -265,14 +338,12 @@ function init {
 
   # Clean up some holdovers
   sudo chown -R ${USER}:${USER} $WORKDIR
-  cd ./portal
-  npm run clean
-  npm i
-  cd ..
 
-
+  init_portal
+  # recompile_portal "External/Eeyore" &&
   restart_portal
-  print_logging
+
+  # print_logging
 
   mkdir -p $WORKDIR/pdfs
 }
@@ -305,11 +376,16 @@ while true; do
 
   FILE_PATH=${EVENT/${modify}/}
   PROJECT=
-  [[ $FILE_PATH =~ "^$INIT_DIR/([^/]+?)/" ]] && PROJECT=${match[1]}
+  [[ $FILE_PATH =~ "^$INIT_DIR/([^/]+?)/([^/]+?)" ]] \
+  &&  if [[ "${match[1]}" == $EXTERNAL_DIR ]]; then
+        PROJECT="${EXTERNAL_DIR}/${match[2]}"
+      else
+        PROJECT=${match[1]}
+      fi
 
   # Root cases
   if [[ $PROJECT == "" ]]; then
-    echo -e "Empty Project match, '$PROJECT'"
+    echo -e "\n\n\n\nEmpty Project match, '$PROJECT'"
     if [[ $FILE_PATH =~ ".+/watcher.sh$" ]]; then
       echo -e "Matched Watcher.sh. Exiting so we can restart"
       tearDown
@@ -360,8 +436,10 @@ while true; do
 
     elif [[ $FILE_PATH =~ ".?/webpack.config.js$" ]]; then
       restart_portal
-    # elif [[ $FILE_PATH =~ "^.?/.+.re$" ]]; then
-      # Doing nothing, as watch should handle this
+
+    elif [[ $FILE_PATH =~ "^.?/.+.res?i?$" ]]; then
+      echo -e "Changed an ReScript file"
+      recompile_portal $PROJECT
 
     #   echo ""
 

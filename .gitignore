@@ -49,8 +49,10 @@ lib/bs
 .merlin
 .bsb.lock
 
+**/.tailwind_ppx_cache/
 
 
-# Other Projects
-/External
+
+# Other Projects - These should have their own git repos
+**/External
 

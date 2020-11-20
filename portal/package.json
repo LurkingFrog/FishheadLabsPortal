@@ -23,10 +23,11 @@
     "react-dom": "^16.13.1",
     "reason-react": ">=0.9.1",
     "reductive": "^2.1.1",
-    "reschema": "^2.0.2-alpha.0",
     "reason-uuid": "1.0.0"
   },
   "devDependencies": {
+    "@dylanirlbeck/tailwind-ppx": "^0.8.3",
+    "tailwindcss": "^1.9.5",
     "bs-platform": "^8.3.1",
     "css-loader": "^5.0.0",
     "extract-css-chunks-webpack-plugin": "^4.7.5",

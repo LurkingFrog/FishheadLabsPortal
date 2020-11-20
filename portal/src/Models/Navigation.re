@@ -56,8 +56,8 @@ module MenuItem = {
     // No duplicates allowed
     Belt.Array.getBy(item.children, x => x.key == child.key)
     |> mapSome(
-         ~msg=Printf.sprintf("MenuItem key '%s' alread has a child '%s'", item.key, child.key),
-         Duplicate,
+         ~msg=format("MenuItem key '%s' alread has a child '%s'", item.key, child.key),
+         DuplicateKey,
        )
     |> kC(() => {
          let children = {...child, parent: Some(item.key)} |> insert(~position, item.children) |> getExn;
@@ -91,7 +91,7 @@ module Menu = {
     // Change the copy in the lookup
     // Get the item from the lookup
     HM.find(
-      ~notFound=Some(sprintf("MenuItem '%s' was clicked but doesn't exist in the lookup", key)),
+      ~notFound=Some(format("MenuItem '%s' was clicked but doesn't exist in the lookup", key)),
       menu.lookup,
       key,
     )
@@ -101,9 +101,7 @@ module Menu = {
            ? ok(item)
            : HM.find(
                ~notFound=
-                 Some(
-                   sprintf("MenuItem '%s' was listed as a parent but doesn't exist in the lookup", key),
-                 ),
+                 Some(format("MenuItem '%s' was listed as a parent but doesn't exist in the lookup", key)),
                menu.lookup,
                item.parent |> Belt.Option.getExn,
              )
@@ -129,7 +127,7 @@ module Menu = {
    * flatten the tree into a list and calculate hierarchy each time, or
   */
   let rec addMenuItems = (menu: t) =>
-    Array.fold_left((acc, item) => acc |> Eeyo.kC(addMenuItem(item)), ok(menu))
+    Array.fold_left((acc, item) => acc |> kC(addMenuItem(item)), ok(menu))
 
   and (
       /** Add a new item with children to the end of the the parent list. If no parent is listed, add it to the root */

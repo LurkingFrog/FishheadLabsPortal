@@ -1,3 +1,7 @@
+/** Show the user a collection of their preferred widgets */
+open Helpers;
+
+/** A small display to show a specific overview */
 module Widget = {
   module Control = {
     type t =
@@ -110,7 +114,7 @@ module Widget = {
     | 4 => <FourColumn> content </FourColumn>
     | 8 => <EightColumn> content </EightColumn>
     | 12 => <Full> content </Full>
-    | x => Invalid_argument(Printf.sprintf("Cannot make a widget of width %i", x)) |> raise
+    | x => Invalid_argument(format("Cannot make a widget of width %i", x)) |> raise
     };
   };
 };

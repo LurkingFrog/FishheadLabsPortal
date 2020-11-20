@@ -96,13 +96,11 @@ module SideBar = {
       navigation.sidebar.root
       |> HM.find(navigation.sidebar.lookup)
       |> kC((root: Navigation.MenuItem.t) => {
-           Js.log("Rendering Children");
-           Js.log(root);
            ok(
              root.children
              |> Array.map((item: Navigation.MenuItem.t) => <MenuItem item key={item.key} />)
              |> ReasonReact.array,
-           );
+           )
          })
       |> getExn;
 

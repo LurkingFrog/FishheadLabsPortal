@@ -7,8 +7,10 @@
 type t =
   | /** A catchall for errors that aren't explicitly listed */
     General
+  | /** The value is not valid in the given context */
+    BadValue
   | /** Tried to update a second value with the same unique identifier */
-    Duplicate
+    DuplicateKey
   | /** When an item isn't located in a group */
     NotFound
   | /** Index isn't in the range of the given list/array */

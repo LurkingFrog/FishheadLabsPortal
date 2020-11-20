@@ -85,6 +85,25 @@
   }
 }
 
+/* Custom labeling */
+.form-material .field-group {
+  border: 1px solid #777;
+}
+
+/* End Custom */
+
+/* Some placeholders for Tailwind */
+.col-md-3 {
+}
+.col-xs-12 {
+}
+.col-md-6 {
+}
+
+.fa-pencil {
+}
+
+/* End Placeholders */
 .anchor {
   cursor: pointer;
 }
