@@ -39,8 +39,9 @@ module.exports = {
       {
         test: /\.css$/,
         use: [
-          { loader: ExtractCssChunks.loader },
-          // { loader: "style-loader" },
+          // Chunks doesn't work with hot reload
+          // { loader: ExtractCssChunks.loader },
+          { loader: "style-loader" },
           { loader: "css-loader", options: { sourceMap: true } },
         ],
       },

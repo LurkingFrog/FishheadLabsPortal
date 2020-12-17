@@ -13,6 +13,27 @@
 @import "dropzone.css";
 @import "introjs.min.css";
 @import "animate.min.css";
+/* @import "FishheadLabs.css"; */
+
+/* Custom labeling */
+.form-material .field-group {
+  border: 1px solid #777;
+}
+
+/* End Custom */
+
+/* Some placeholders so Tailwind doesn't get crabby*/
+.col-md-3 {
+}
+.col-xs-12 {
+}
+.col-md-6 {
+}
+
+.fa-pencil {
+}
+
+/* End Placeholders */
 
 @-webkit-keyframes cardEnter {
   0%,
@@ -85,25 +106,6 @@
   }
 }
 
-/* Custom labeling */
-.form-material .field-group {
-  border: 1px solid #777;
-}
-
-/* End Custom */
-
-/* Some placeholders for Tailwind */
-.col-md-3 {
-}
-.col-xs-12 {
-}
-.col-md-6 {
-}
-
-.fa-pencil {
-}
-
-/* End Placeholders */
 .anchor {
   cursor: pointer;
 }

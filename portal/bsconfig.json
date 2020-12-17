@@ -5,21 +5,15 @@
   },
   "sources": {
     "dir": "src",
-    "subdirs": true,
-    "generators": [
-      {
-        "name": "gen-tailwind",
-        "edge": ["assets/css/tailwind.css", ":", "./assets/css/atlant-theme-default.css"]
-      }
-    ]
+    "subdirs": true
   },
   "generators": [
     {
-      "name": "gen-tailwind",
+      "name": "gen_tailwind",
       "command": "tailwindcss build $in -o $out"
     }
   ],
-  "bsc-flags": ["-bs-super-errors", "-bs-no-version-header"],
+  "bsc-flags": ["-bs-g", "-bs-super-errors", "-bs-no-version-header"],
   "package-specs": [
     {
       "module": "commonjs",
@@ -28,9 +22,17 @@
   ],
   "suffix": ".bs.js",
   "namespace": true,
-  "bs-dependencies": ["bs-webapi", "reason-react", "reason-uuid", "reductive", "eeyo.re", "enform"],
+  "bs-dependencies": [
+    "bs-webapi",
+    "reason-react",
+    "reason-uuid",
+    "reductive",
+    "eeyo.re",
+    "enform",
+    "reductive-dev-tools"
+  ],
   "refmt": 3,
-  "ppx-flags": [["@dylanirlbeck/tailwind-ppx/bin/tailwind-ppx", "-path src/assets/css/tailwind.css"]],
+  "ppx-flags": [["@dylanirlbeck/tailwind-ppx/bin/tailwind-ppx", "-path ./src/assets/css/tailwind.css"]],
   "warnings": {
     "number": "+A-42-48-4",
     "error": "+A-3-44-102-103"

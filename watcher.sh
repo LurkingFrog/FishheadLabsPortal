@@ -13,6 +13,9 @@ export CODE_ROOT=/home/dfogelson/Foundry
 # This is the root of the project. It gets mounted wholesale in the development docker environment
 export WORKDIR=$CODE_ROOT/FishheadLabsPortal
 
+# The External Source Code
+
+
 
 
 # An easier to read variable for calling docker compose. We'll set this programmatically
@@ -31,11 +34,16 @@ PG_PASS=
 
 # Some project groupings. These are used so I can figure out the correct containers to manage
 EXTERNAL_DIR=External
-EXTERNAL=('Gappi' 'Subpar' 'Wrapi' 'Eeyore' 'Enform')
+
+# The location of the source code
+EEYORE_SRC=$CODE_ROOT/Eeyo/packages/eeyo
+ENFORM_SRC=$CODE_ROOT/Enform/packages/enform
+EXTERNAL=('Gappi' 'Subpar' 'Wrapi' 'enform' 'eeyore')
 ALL=('cache' 'postgres' 'google_sheets' 'client' 'portal' 'server')
 for x in $EXTERNAL; do ALL+="$EXTERNAL_DIR/$x"; done
+
 SERVER="cache postgres server sheets External/Wrapi External/Subpar External/Gappi "
-CLIENT="cache client portal External/Eeyore External/Enform "
+CLIENT="cache client portal eeyore enform "
 
 
 # If Diesel is missing on ubuntu:
@@ -205,39 +213,53 @@ function restart_service() {
 }
 
 
-# Run the web portal locally. Mounting and running in docker seems to cause a conflict with VS Code, so
-# doing it manually for now
-function restart_portal() {
-  echo -e "\n\n--->(Re)starting  Web Portal"
-  cd $WORKDIR/portal
+function build_tailwind_css() {
+  # This appears to be several bugs with bsb/bsconfig
+  # - doesn't make generated files a dependency of anything (dyndep), so runs tailwind in parallel with files that need it
+  # -
 
+  cd $WORKDIR/portal
+  echo -e "\n\n---> Building Tailwind: in $(pwd)\n"
+  ./node_modules/.bin/tailwindcss build src/assets/css/atlant-theme-default.css -o src/assets/css/tailwind.css  \
+  || return $?
+  cp ./src/assets/css/tailwind.css node_modules/enform/src/assets/css/tailwind.css
+}
+
+# Make sure the portal hasnt started
+function stop_portal() {
   if [[ $PORTAL_SERVER_PID != "" ]]; then
     echo -e "Killing the portal server with pid ${PORTAL_SERVER_PID}"
     kill ${PORTAL_SERVER_PID}
+    PORTAL_SERVER_PID=
   fi
 
   if [[ $PORTAL_COMPILER_PID != "" ]]; then
     echo -e "Killing the portal compiler with pid ${PORTAL_COMPILER_PID}"
     kill ${PORTAL_COMPILER_PID}
+    PORTAL_COMPILER_PID=
   fi
 
   # Kill anything that looks like it was running from this directory
   for x in $(ps aux | grep $WORKDIR | head -n-1 | sed -E "s|^(\w+)\+\s+([0-9]+).+\$|\2|"); do \
-    echo -e "Killing pid $x"; \
+    echo -e "Killing extra pid $x"; \
     kill $x; \
   done
+}
 
+
+# Run the web portal locally. Mounting and running in docker seems to cause a conflict with VS Code, so
+# doing it manually for now
+function restart_portal() {
+  echo -e "\n\n--->(Re)starting  Web Portal"
+  stop_portal
+
+  cd $WORKDIR/portal
   rm -f .bsb.lock
-  npm link eeyo.re enform
   npm run clean
+  echo -e "\n\n---> Running Clean in $(pwd)\n"
 
-  # This prebuild hopefully fixes the enform-tailwind error:
-  #   tailwind.css file not found in project hierarchy. You may need to manually set the path to the file with the -path argument.
-  [ ! -e "src/assets/css/tailwind.css" ] && \
-    ./node_modules/.bin/tailwindcss build src/assets/css/atlant-theme-default.css -o src/assets/css/tailwind.css
-  [ ! -e "node_modules/enform/src/assets/css/tailwind.css" ] && \
-    cp src/assets/css/tailwind.css node_modules/enform/src/assets/css/tailwind.css
-
+  npm link eeyo.re enform
+  build_tailwind_css
   npm run build
 
   if [ $? -ne 0 ]; then
@@ -253,19 +275,30 @@ function restart_portal() {
 }
 
 function recompile_portal() {
+  echo -e "\n\n---> Recompiling the portal"
+
   RESULT=Initialized
-  if [[ $1 =~ "$EXTERNAL_DIR/Eeyore" ]]; then
+  if [[ $1 =~ "eeyore" ]]; then
     echo -e "Running Eeyore Build"
-    cd $WORKDIR/$EXTERNAL_DIR/Eeyore
-    npm run build || return $?
+    cd $EEYORE_SRC
+    npm run clean
+    # npm run build || return $?
     RESULT="Ok"
   fi
 
-  if [[ $RESULT == "Ok" ]] || [[ $1 =~ "$EXTERNAL_DIR/Enform" ]]; then
-    echo -e "Running Enform Build"
-    cd $WORKDIR/$EXTERNAL_DIR/Enform
-    npm run build || return $?
+  if [[ $RESULT == "Ok" ]] || [[ $1 =~ "enform" ]]; then
+    cd $ENFORM_SRC
+    echo -e "Running Enform Build in $ENFORM_SRC"
+    npm run clean
+    # [ ! -e "src/assets/css/tailwind.css" ] \
+    # && ./node_modules/.bin/tailwindcss build src/assets/css/default.css -o src/assets/css/tailwind.css
+    # npm run build || return $?
     RESULT="Ok"
+  fi
+
+  # This means that a module has been rebuilt, so we need to force the portal to rebuild from scratch
+  if [[ $RESULT == "Ok" ]]; then
+    stop_portal
   fi
 
   if [[ $PORTAL_SERVER_PID == "" ]]; then
@@ -279,33 +312,31 @@ function recompile_portal() {
 }
 
 function init_portal() {
-  echo -e "Setting up the portal"
+  echo -e "---> Initializing the portal"
 
-  # Create a symbolic link for each external project
-  # And add in the npm link
-  cd $WORKDIR/$EXTERNAL_DIR
-
-  [ ! -d "Eeyore" ] && ln -s $CODE_ROOT/Eeyo/packages/eeyo ./Eeyore
-  cd Eeyore
+  # Do an intial build and link of Eeyore
+  [ ! -d "$WORKDIR/External/eeyore" ] && ln -s $EEYORE_SRC "$WORKDIR/External/eeyore"
+  cd $EEYORE_SRC
   rm -rf lib
+  npm i
   npm run clean
   npm link
-  cd ..
 
-  [ ! -d "Enform" ] && ln -s $CODE_ROOT/Enform/packages/enform ./Enform
-  cd Enform
+  # Do an intial build and link of Enform
+  [ ! -d "$WORKDIR/External/enform" ] && ln -s $ENFORM_SRC "$WORKDIR/External/enform"
+  cd $ENFORM_SRC
+  rm -rf lib
+  npm i
+  npm run clean
   npm link
   npm link eeyo.re
-  rm -rf lib
-  npm run clean
-  cd ..
 
   cd $WORKDIR/portal
   rm -rf lib
-  npm link eeyo.re enform
-  npm run clean
   npm i
-  cd ..
+  npm link eeyo.re enform
+
+  build_tailwind_css && npm run build
 }
 
 function test_server() {
@@ -334,14 +365,14 @@ function init {
 
   # pg_init
   # restart_service server
-  $COMPOSE down
+  # $COMPOSE down
 
   # Clean up some holdovers
   sudo chown -R ${USER}:${USER} $WORKDIR
 
-  init_portal
-  # recompile_portal "External/Eeyore" &&
-  restart_portal
+  echo -e $SEP
+  stop_portal
+  init_portal && recompile_portal "eeyore"
 
   # print_logging
 
@@ -368,17 +399,18 @@ init
 
 while true; do
   command -v inotifywait > /dev/null 2>&1 || $(echo -e "InotifyWait not installed" && exit 1)
-  EVENT=$(inotifywait -q -r --exclude target -e modify \
+  EVENT=$(inotifywait -q -r --exclude target --exclude ".lsp" -e modify \
     $WORKDIR/watcher.sh \
     $WORKDIR/Cargo.toml \
     $(for x in $ALL; do echo -e "$WORKDIR/$x\n"; done) \
   )
 
   FILE_PATH=${EVENT/${modify}/}
+
   PROJECT=
   [[ $FILE_PATH =~ "^$INIT_DIR/([^/]+?)/([^/]+?)" ]] \
   &&  if [[ "${match[1]}" == $EXTERNAL_DIR ]]; then
-        PROJECT="${EXTERNAL_DIR}/${match[2]}"
+        PROJECT="${match[2]}"
       else
         PROJECT=${match[1]}
       fi
@@ -426,10 +458,9 @@ while true; do
     print_logging
 
   elif isIn $PROJECT $CLIENT; then
+    echo -e "Is In Profile Client:  $FILE_PATH"
     if [[ $FILE_PATH =~ ".?/package.json$" ]]; then
-      cd $WORKDIR/portal
-      npm i
-      restart_portal
+      init_portal && restart_portal
 
     elif [[ $FILE_PATH =~ ".?/bsconfig.json$" ]]; then
       restart_portal
@@ -438,8 +469,12 @@ while true; do
       restart_portal
 
     elif [[ $FILE_PATH =~ "^.?/.+.res?i?$" ]]; then
-      echo -e "Changed an ReScript file"
+      echo -e "Changed an ReScript file in project: $PROJECT"
       recompile_portal $PROJECT
+
+    elif [[ $FILE_PATH =~ "^.?/.+.css$" ]]; then
+      echo -e "Changed css"
+      build_tailwind_css
 
     #   echo ""
 
@@ -449,8 +484,12 @@ while true; do
     # elif [[ $FILE_PATH =~ "^.?/.+\.[rei?|resi?|html|css]$" ]]; then
     # print_logging
     # sleep 2
+    else
+      echo -e "Doing nothing"
 
     fi
+  else
+    echo -e "Unmatched project $PROJECT"
   fi
   # Changes don't need to be that fast, so give it a break in between
   sleep 2

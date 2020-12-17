@@ -79,7 +79,12 @@ module Import = {
 
            // Google Sheets fields
            let gsSheetId =
-             newTextInput(~config=newConfig(~label="Sheet Id", "sheetId") |> getExn, "sheetId");
+             newTextInput(
+               ~config=newConfig(~label="Sheet Id", "gsSheetId") |> getExn,
+               ~icon="fa-pencil",
+               "gsSheetId",
+             );
+
            let gsAsUser =
              newSelectInput(
                ~config=newConfig(~label="As User", "gsAsUser") |> getExn,
@@ -95,14 +100,17 @@ module Import = {
              );
 
            // CSV fields
-           let csvDirectory =
+           let csvFilePath =
              newTextInput(
                ~config=newConfig(~label="File Directory", "csvFilePath") |> getExn,
                "csvFilePath",
              );
 
+           //  let clearButton = newClearButton("Clear");
+           // let submitButton = newSubmitButton("Submit");
+
            // Group the fields and create the form
-           [|inputSource, gsSheetId, gsAsUser, excelFilePath, csvDirectory|]
+           [|inputSource, gsSheetId, gsAsUser, excelFilePath, csvFilePath|]
            |> A.flattenExn(
                 ~groupErrorMsg=
                   Some(format("There were issues creating the fields for form '%s': ", form.guid)),
@@ -112,9 +120,9 @@ module Import = {
       |> kC(
            addSelectorGroup(
              ~groupMap=[|
-               ("GoogleSheets", [|"sheetId", "asUser"|]),
+               ("GoogleSheets", [|"gsSheetId", "gsAsUser"|]),
                ("Excel", [|"excelFilePath"|]),
-               ("CSV", [|"csvDirectory"|]),
+               ("CSV", [|"csvFilePath"|]),
              |],
              ~selectorId="importSource",
              ~parentId=rootGroupId,
@@ -122,18 +130,16 @@ module Import = {
            ),
          );
     };
-
-    [@react.component]
-    let make = (~children) => {
-      let (formState, dispatch) = React.useState(() => newImportDataForm() |> Helpers.getExn);
-      Js.log("Rendering the ImportDataForm:");
-      Js.log(formState);
-      Js.log(dispatch);
-      Js.log(children);
-
-      // Get the field
-      <div className=[%tw ""]> "Placeholder for ImportDataForm"->ReasonReact.string children </div>;
-    };
+    // [@react.component]
+    // let make = (~form ~children) => {
+    //   Js.log("Running ImportDataForm.make for Database Page");
+    //   let (formState, dispatch) = React.useState(() => newImportDataForm() |> Helpers.getExn);
+    //   Js.log("Rendering the ImportDataForm:");
+    //   Js.log(formState);
+    //   let _ = dispatch;
+    //   // Get the field
+    //   <div className=[%tw ""]> "Placeholder for ImportDataForm"->ReasonReact.string children </div>;
+    // };
     // each field gets it's own module to play in
     // module Source = {
     //   [@react.component]
@@ -154,7 +160,8 @@ module Import = {
   [@react.component]
   let make = () => {
     let (formState, setFormState) =
-      React.useState(() => ImportDataForm.newImportDataForm() |> Helpers.getExn);
+      React.useState(_ => ImportDataForm.newImportDataForm() |> Helpers.getExn);
+
     <div className=[%tw "panel panel-default"]>
       <div className=[%tw "panel-heading"]>
         <h3 className=[%tw "panel-title"]> <strong> "Import/Export Data"->ReasonReact.string </strong> </h3>
@@ -174,12 +181,14 @@ module Import = {
 [@react.component]
 let make = () => {
   let url = ReasonReactRouter.useUrl();
-  Js.log(url.path);
+  Js.log("Rendering Database Page because the URL is");
+  Js.log(url);
   switch (url.path) {
   | [_, "configuration"] => <Configuration />
-  | [_, "import"] => <Import />
+  | [_, "import"] =>
+    Js.log("Path says to render import");
+    <Import />;
   | [_, "io_templates"] => <IoTemplates />
-
   | [_, "status"]
   | [_] => <Status />
   | _ => <PageNotFound />

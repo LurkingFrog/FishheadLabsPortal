@@ -2,9 +2,9 @@
   "name": "portal",
   "version": "0.1.0",
   "scripts": {
-    "build": "node_modules/.bin/bsb -make-world",
-    "start": "node_modules/.bin/bsb -make-world -w < /dev/zero",
-    "clean": "node_modules/.bin/bsb -clean-world",
+    "build": "bsb -make-world",
+    "start": "bsb -make-world -w < /dev/zero",
+    "clean": "bsb -clean-world",
     "webpack": "webpack -w",
     "webpack:production": "NODE_ENV=production webpack",
     "server": "webpack-dev-server",
@@ -27,13 +27,14 @@
   },
   "devDependencies": {
     "@dylanirlbeck/tailwind-ppx": "^0.8.3",
-    "tailwindcss": "^1.9.5",
     "bs-platform": "^8.3.1",
     "css-loader": "^5.0.0",
     "extract-css-chunks-webpack-plugin": "^4.7.5",
     "file-loader": "^6.1.1",
     "html-webpack-plugin": "^4.5.0",
+    "reductive-dev-tools": "^3.0.0",
     "style-loader": "^2.0.0",
+    "tailwindcss": "^1.9.5",
     "webpack": "^4.44.2",
     "webpack-cli": "3.3.12",
     "webpack-dev-server": "^3.11.0"
